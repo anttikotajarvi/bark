@@ -84,6 +84,7 @@ graph = Graph {
   }
 }
 ```
+
 #### File tree
 ```
 company/
@@ -117,7 +118,7 @@ random-dir2/
   note.pkl:
     todo = "Send email!"
 ```
-#### Output
+#### Projection output
 ```pkl
 {
   company {
