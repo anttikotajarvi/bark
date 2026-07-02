@@ -57,6 +57,11 @@ lots/
   L2/
     index-schema.pkl
     index.pkl
+archive/
+  old-products/
+    schema.pkl
+  test-products/
+    schema.pkl
 
 random-dir/
   index.pkl: 
@@ -90,6 +95,10 @@ graph = Graph {
   ["lots"] = Collection(
     IndexNode(schemas.Lot)
   )
+  ["archive"] = Dir(new Children {
+    ["old-products] = Table(schemas.Product)
+    ["test-products] = Table(schemas.Product)
+  })
 }
 ```
 #### Graph in program memory 
