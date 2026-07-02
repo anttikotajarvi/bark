@@ -35,6 +35,40 @@ type IndexNode = {
   nodes: Mapping<String, AnyNode>
 }
 ```
+
+#### File tree
+```
+company/
+  index-schema.pkl
+  index.pkl:
+    company-name = "Bark LLC"
+  logs/
+    schema.pkl
+    log1.pkl
+    log.pkl
+products/
+  schema.pkl
+  P1.pkl
+  P2.pkl
+lots/
+  L1/
+    index-schema.pkl
+    index.pkl
+  L2/
+    index-schema.pkl
+    index.pkl
+
+random-dir/
+  index.pkl: 
+    import "random-note.pkl"
+  random-note.pkl:
+    greeting = "Hello"
+  unindexed-note.pkl:
+    greeting = "Goodbye!"
+random-dir2/
+  note.pkl:
+    todo = "Send email!"
+```
 #### Graph declaration
 ```pkl
 amends "@bark/meta/RegistryDeclaration.pkl"
@@ -85,38 +119,22 @@ graph = Graph {
 }
 ```
 
-#### File tree
-```
-company/
-  index-schema.pkl
-  index.pkl:
-    company-name = "Bark LLC"
-  logs/
-    schema.pkl
-    log1.pkl
-    log.pkl
-products/
-  schema.pkl
-  P1.pkl
-  P2.pkl
-lots/
-  L1/
-    index-schema.pkl
-    index.pkl
-  L2/
-    index-schema.pkl
-    index.pkl
+#### Type render output
+```pkl
+open module ProjectionSchema
 
-random-dir/
-  index.pkl: 
-    import "random-note.pkl"
-  random-note.pkl:
-    greeting = "Hello"
-  unindexed-note.pkl:
-    greeting = "Goodbye!"
-random-dir2/
-  note.pkl:
-    todo = "Send email!"
+import ".bark/bundle/schemas/Company.pkl" as Company
+import ".bark/bundle/schemas/Product.pkl" as Product
+import ".bark/bundle/schemas/Lot.pkl" as Lot
+
+// These would be imported from somewhere
+typealias PosixFileName = String 
+typealias PosixDirName = String
+
+company: Company
+products: Mapping<PosixFileName, Product>
+lots: Mapping<PosixDirName, Lot>
+
 ```
 #### Projection output
 ```pkl
