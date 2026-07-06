@@ -1,2 +1,3 @@
 module Constants
 const BUNDLE_DIRNAME = "bundle"
+const INDEX_NAME = "index"

@@ -11,6 +11,7 @@ import "Expr.pkl" as Expr
 class ClassRender {
   name: String = ""
   contents: String = ""
+  isOpen: Boolean = false
 }
 
 /// Rendered projection type for one graph node.
@@ -57,6 +58,7 @@ function dirNodeType(dir: Sys.DirNode, path: List<String>): TypeRender =
       classDecls = body.classDecls + List(new ClassRender {
         name = cName
         contents = body.expr
+        isOpen = true
       })
     }
 

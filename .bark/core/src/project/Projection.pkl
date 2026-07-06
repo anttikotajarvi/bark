@@ -1,0 +1,146 @@
+module bark.project.Projection
+
+import "../Scaffolding.pkl" as Sys
+import "../render/Expr.pkl" as Expr
+import "EntryTree.pkl" as EntryTree
+
+const PROJECTION_SCHEMA_PATH = "ProjectionSchema.pkl"
+
+class CodeRender {
+  expr: String = ""
+}
+
+// Unlike Expr.indent, retain indentation already present in nested renders.
+function indentBlock(text: String, spaces: Int): String =
+  let (prefix = " ".repeat(spaces))
+    text
+      .trim()
+      .split("\n")
+      .map((line) ->
+        if (line.isBlank) ""
+        else "\(prefix)\(line)"
+      )
+      .join("\n")
+
+local function getChildNode(
+  curNode: Sys.AnyNode,
+  path: List<String>
+): Sys.AnyNode? =
+  if (path.isEmpty)
+    curNode
+  else if (curNode is Sys.CollectionNode)
+    getChildNode(curNode._entryNode, path.drop(1))
+  else if (curNode is Sys.DirNode || curNode is Sys.IndexNode)
+    let (child = curNode._nodes.getOrNull(path.first))
+      if (child == null)
+        null
+      else
+        getChildNode(child, path.drop(1))
+  else
+    null
+
+function getNode(graph: Sys.AnyNode, path: List<String>): Sys.AnyNode? =
+  getChildNode(graph, path)
+
+function importEntry(entry: EntryTree.Entry, pathPrefix: String): String =
+  "import(\"\(pathPrefix)\(entry.localPath)\")"
+
+function usesElements(graph: Sys.AnyNode, path: List<String>): Boolean =
+  let (node = getNode(graph, path))
+    node is Sys.TableNode || node is Sys.CollectionNode
+
+function renderObject(
+  tree: Mapping,
+  graph: Sys.AnyNode,
+  path: List<String>,
+  pathPrefix: String
+): CodeRender =
+  let (constructor = if (usesElements(graph, path)) "Mapping" else "Dynamic")
+  let (body = renderMembers(tree, graph, path, pathPrefix).expr)
+    new CodeRender {
+      expr =
+        if (body == "")
+          "new \(constructor) {}"
+        else
+          """
+          new \(constructor) {
+          \(indentBlock(body, 2))
+          }
+          """.trim()
+    }
+
+function renderValue(
+  node: Any,
+  graph: Sys.AnyNode,
+  path: List<String>,
+  pathPrefix: String
+): CodeRender =
+  if (node is EntryTree.Entry)
+    new CodeRender {
+      expr = importEntry(node, pathPrefix)
+    }
+  else if (node is Mapping)
+    renderObject(node, graph, path, pathPrefix)
+  else
+    throw("Unrecognized entry tree node at '\(path.join("/"))'")
+
+function renderMember(
+  name: String,
+  node: Any,
+  graph: Sys.AnyNode,
+  parentPath: List<String>,
+  pathPrefix: String
+): CodeRender =
+  let (path = parentPath.add(name))
+    if (usesElements(graph, parentPath))
+      let (value = renderValue(node, graph, path, pathPrefix).expr)
+        new CodeRender {
+          expr = "[\"\(name)\"] = \(value)"
+        }
+    // A declared property already exists in ProjectionSchema, so amend its
+    // default object directly. This keeps nested generated code compact.
+    else if (node is Mapping && getNode(graph, path) != null)
+      let (body = renderMembers(node, graph, path, pathPrefix).expr)
+        new CodeRender {
+          expr =
+            if (body == "")
+              "\(Expr.propertyName(name)) {}"
+            else
+              """
+              \(Expr.propertyName(name)) {
+              \(indentBlock(body, 2))
+              }
+              """.trim()
+        }
+    else
+      let (value = renderValue(node, graph, path, pathPrefix).expr)
+        new CodeRender {
+          expr = "\(Expr.propertyName(name)) = \(value)"
+        }
+
+function renderMembers(
+  tree: Mapping,
+  graph: Sys.AnyNode,
+  path: List<String>,
+  pathPrefix: String
+): CodeRender =
+  new Listing<CodeRender> {
+    for (name, node in tree) {
+      renderMember(name, node, graph, path, pathPrefix)
+    }
+  }.fold(new CodeRender {}, (acc, member) -> new CodeRender {
+    expr =
+      if (acc.expr == "") member.expr
+      else "\(acc.expr)\n\(member.expr)"
+  })
+
+function render(
+  tree: Mapping,
+  graph: Sys.AnyNode,
+  pathPrefix: String
+): String =
+  """
+  extends "\(PROJECTION_SCHEMA_PATH)"
+
+  \(renderMembers(tree, graph, List(), pathPrefix).expr)
+  """.trim()

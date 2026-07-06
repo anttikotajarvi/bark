@@ -20,7 +20,12 @@ function compileTypes(graph: Sys.AnyNode): String =
     """
     \(rootNode.classDecls
       .filter((c) -> c.name != ROOT_NAME) 
-      .map((c) -> Expr.classDecl(c.name, c.contents))
+      .map((c) ->
+        if (c.isOpen)
+          Expr.openClassDecl(c.name, c.contents)
+        else
+          Expr.classDecl(c.name, c.contents)
+      )
       .join("\n"))
 
     \(rootClass.contents.trim())

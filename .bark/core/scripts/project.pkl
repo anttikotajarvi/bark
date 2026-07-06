@@ -1,33 +1,63 @@
+module bark.scripts.Project
 
-// Do not expose this as a public output property.
-const local rootPath = "../../../"
-local allImports = import*("../../../**.pkl")
+extends "pkl:Command"
 
-function keepImportPath(path: String): Boolean =
+import "../../registry.pkl" as Registry
+import "../src/project/EntryTree.pkl" as EntryTree
+import "../src/project/Projection.pkl" as Projection
+
+
+const ROOT_PATH = "../../../"                 // these need to be coupled 
+local allImports = import*("../../../**.pkl") // <---
+
+local function keepImportPath(path: String): Boolean =
   !path.startsWith("../../.bark/") &&
   !path.contains("/.bark/") &&
   !path.endsWith("/index-schema.pkl") &&
   !path.endsWith("/schema.pkl")
 
-local userTreeImports = new Mapping {
+local entries = new Listing<EntryTree.Entry> {
   for (path in allImports.keys.filter((p) -> keepImportPath(p))) {
-    [path] = allImports[path]
+    new EntryTree.Entry {
+      localPath = path.replaceFirst(ROOT_PATH, "")
+    }
+  }
+}.toList()
+
+local entryTree = EntryTree.build(entries)
+local PATH_PREFIX = options.`path-prefix` ?? ROOT_PATH
+
+options: Options
+
+class Options {
+  /// Write the generated Projection.pkl source to a file instead of stdout.
+  @Flag {
+    shortName = "o"
+    metavar = "file"
+    completionCandidates = "paths"
+  }
+  output: String? = null
+
+  /// Prefix prepended to entry paths in generated import expressions.
+  /// Include a trailing slash when the prefix is not empty.
+  @Flag { metavar = "path" }
+  `path-prefix`: String? = null
+}
+
+rendered = Projection.render(entryTree, Registry.graph, PATH_PREFIX)
+
+output {
+  text =
+    if (options.output == null)
+      rendered
+    else
+      ""
+
+  files {
+    when (options.output != null) {
+      ["\(options.output)"] {
+        text = rendered
+      }
+    }
   }
 }
-class Entry {
-  relPath: String
-  localPath = relPath.replaceFirst(rootPath, "")
-  hidden els = localPath.split("/")
-  anchors = els.dropLast(1)
-  filename = els.last
-  local EXPECTED_EXT = ".pkl"
-  name = filename.replaceLast(EXPECTED_EXT, "")
-}
-entries = userTreeImports.toMap().fold(List(), (acc, name, node) ->
-    acc + List(new Entry {
-        relPath = name
-      })
-  )
-local graph = import("../../registry.pkl").graph
-
-

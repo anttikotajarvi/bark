@@ -1,0 +1,62 @@
+module bark.project.EntryTree
+
+import "../constants.pkl" as CFG
+
+typealias NodeName = String
+
+class Entry {
+  localPath: String
+  hidden els = localPath.split("/")
+  anchors = els.dropLast(1)
+  filename = els.last
+  local EXPECTED_EXT = ".pkl"
+  name = filename.replaceLast(EXPECTED_EXT, "")
+}
+
+// Pkl type aliases cannot be recursive, so the functions below own the
+// invariant that values in an ENode mapping are themselves ENodes.
+typealias ENode = Entry | Mapping<NodeName, Any>
+
+// Returns null when the entry cannot be inserted. This lets every caller in
+// the recursion reject the change and keep its original node unchanged.
+local function consumeChild(
+  entry: Entry,
+  curNode: ENode,
+  curPath: List<String>
+): ENode? =
+  // index.pkl is a filesystem-level projection boundary. Once a directory is
+  // represented by an Entry, descendants lose.
+  if (curNode is Entry)
+    null
+  else if (curPath.isEmpty)
+    if (entry.name == CFG.INDEX_NAME)
+      entry
+    else if (curNode.containsKey(entry.name))
+      null
+    else
+      (curNode) {
+        [entry.name] = entry
+      }
+  else
+    let (parentName = curPath.first)
+      let (oldChild = curNode.getOrNull(parentName) ?? new Mapping {})
+        let (newChild = consumeChild(entry, oldChild, curPath.drop(1)))
+          if (newChild == null)
+            null
+          else
+            (curNode) {
+              [parentName] = newChild
+            }
+
+function consumeEntry(
+  entry: Entry,
+  curTree: ENode,
+  curPath: List<String>
+): ENode =
+  consumeChild(entry, curTree, curPath) ?? curTree
+
+function build(entries: List<Entry>): ENode =
+  entries.fold(
+    new Mapping {},
+    (tree, entry) -> consumeEntry(entry, tree, entry.anchors)
+  )

@@ -25,6 +25,13 @@ function classDecl(name: String, contents: String): String =
   }
   """.trim()
 
+function openClassDecl(name: String, contents: String): String =
+  """
+  open class \(name) {
+  \(indent(contents, 2))
+  }
+  """.trim()
+
 /// Always backtick generated properties.
 /// This keeps names like `old-products` valid.
 /// Also protects from reserved keywords
@@ -33,4 +40,3 @@ function propertyName(name: String): String =
 
 function importAs(path: Util.PklImportPath, name: Util.PklIdentifier): String =
   "import \"\(path)\" as \(name)"
-
