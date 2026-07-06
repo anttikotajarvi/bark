@@ -1,3 +1,4 @@
+// repo/PklProject
 amends "pkl:Project"
 evaluatorSettings {
   modulePath {
@@ -5,5 +6,5 @@ evaluatorSettings {
   }
 }
 dependencies {
-  ["bark"] = import(".bark/PklProject")
+  ["bark"] = import(".bark/core/PklProject")
 }

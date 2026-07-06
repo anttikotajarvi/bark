@@ -28,4 +28,4 @@ entries = userTreeImports.toMap().fold(List(), (acc, name, node) ->
         relPath = name
       })
   )
-graph = import("../generated/registry.pcf")
+graph = import("../../registry.pkl").graph

@@ -1,12 +1,12 @@
-amends "@bark/RegistryDeclaration.pkl" // Required amendment
-import "@bark/src/Meta.pkl" as Lib
-import "@bark/src/Scaffolding.pkl" as Sys
+amends "core/RegistryDeclaration.pkl" // Required amendment
+import "core/src/Meta.pkl" as Lib
+import "core/src/Scaffolding.pkl" as Sys
 
 local schemas = new {
-  company = Lib.schema("bundle/schemas/Company.pkl")
-  log = Lib.schema("bundle/schemas/Log.pkl")
-  lot = Lib.schema("bundle/schemas/Lot.pkl")
-  product = Lib.schema("bundle/schemas/Product.pkl")
+  company = Lib.schema("schemas/Company.pkl")
+  log = Lib.schema("schemas/Log.pkl")
+  lot = Lib.schema("schemas/Lot.pkl")
+  product = Lib.schema("schemas/Product.pkl")
 }
 graph = Lib.Dir(new Sys.Children {
   ["company"] = Lib.IndexedDir(schemas.company, new Sys.Children {

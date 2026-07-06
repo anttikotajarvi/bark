@@ -2,7 +2,8 @@ import "Generic.pkl" as G
 import "pkl:reflect" as Reflect
 class Schema {
   path: G.SchemaPath
-  resource: Resource = read("modulepath:/"+path)
+  hidden PATH_OFFSET = "modulepath:/.bark/" // TODO: Fragile path
+  resource: Resource|String = read(PATH_OFFSET+path)
 }
 
 abstract class AnyNode {

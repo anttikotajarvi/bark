@@ -1,0 +1,14 @@
+// repo/.bark/internal/PklProject
+amends "pkl:Project"
+package {
+  name = "bark-core"
+  baseUri = "package://example.com/bark-core"
+  version = "0.1.0"
+  packageZipUrl = "https://example.com/bark-core@\(version).zip"
+}
+
+evaluatorSettings {
+  modulePath {
+    "."
+  }
+}
