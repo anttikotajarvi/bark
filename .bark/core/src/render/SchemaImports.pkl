@@ -52,7 +52,7 @@ function collectSchemas(node: Sys.AnyNode): Mapping<SchemaID, Sys.Schema> =
     }
   }
 
-function renderImports(node: Sys.AnyNode): String =
+function renderImports(node: Sys.AnyNode, pathPrefix: String): String =
   collectSchemas(node).toMap().values.map((s) ->
-    Expr.importAs(s.resource.uri, moduleNameFromSchema(s))
+    Expr.importAs("\(pathPrefix)\(s.path)", moduleNameFromSchema(s))
   ).join("\n")

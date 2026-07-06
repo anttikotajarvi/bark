@@ -31,14 +31,14 @@ function compileTypes(graph: Sys.AnyNode): String =
     \(rootClass.contents.trim())
     """.trim()
 
-function render(graph: Sys.AnyNode): String =
+function render(graph: Sys.AnyNode, pathPrefix: String): String =
   """
   open module ProjectionSchema
   // bark imports
   \(dependency("../Generic.pkl", "../src/Generic.pkl", "G"))
 
   // User defined schemas
-  \(SchemaImports.renderImports(graph))
+  \(SchemaImports.renderImports(graph, pathPrefix))
 
   \(compileTypes(graph))
   """
