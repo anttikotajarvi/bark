@@ -6,7 +6,7 @@ This is a working decision log, not polished user documentation. It records the 
 
 1. Read the graph from `repo/.bark/registry.pkl`.
 2. Render `ProjectionSchema.pkl` from the graph.
-3. Collect every statically declared graph path.
+3. Collect static graph paths and expand observed collection children.
 4. Check that those directories exist in the filesystem.
 5. Seed an entry tree with the declared directories, including empty ones.
 6. Add imported user entries and collapse directories containing `index.pkl`.
@@ -19,6 +19,28 @@ From `repo/`, the whole flow is:
 ./.bark/core/scripts/generate-and-check.sh
 ```
 
+## Failure policy
+
+The guiding rule is: generate Pkl whenever the observed state can be represented, then let Pkl validate its meaning. Generated source may therefore be syntactically valid while deliberately failing the generated schema.
+
+Failures fall into three categories:
+
+- **Deferred Pkl validation.** Missing indexes, wrong collection entry types, invalid imported values, and schema mismatches are represented in `projection.pkl` and rejected when it is evaluated against `ProjectionSchema.pkl`.
+- **Pre-generation directory-shape errors.** A graph-required filesystem directory that does not exist fails before seeding or rendering. This is the expected user-facing Bark error during generation.
+- **Internal invariant and dependency errors.** Unknown graph/tree node types and missing Bark renderer dependencies indicate implementation or installation failures, not invalid user data.
+
+An unresolved `IndexNode` demonstrates the deferred approach. Its seeded mapping is rendered as:
+
+```pkl
+new Dynamic {}
+```
+
+This is an intentional placeholder: it keeps the generated Pkl valid as source while guaranteeing that evaluation fails against the indexed schema type.
+
+Directory-shape validation is the deliberate exception to deferring errors. Seeding alone cannot preserve whether a path existed: a missing `products/` and an existing empty `products/` would both become `{}`. Mapping defaults can then make both appear valid. Static children below an index boundary also disappear from projection and cannot be checked by the generated schema. Filesystem existence must therefore be checked before those paths are seeded.
+
+In this context, an **invalid directory shape** means a missing graph-required filesystem path, including static descendants beneath observed collection entries. It does not mean an empty index, a wrong entry type, or another state that can be represented and deferred to Pkl validation.
+
 ## Graph semantics
 
 - The graph is additive. It declares the minimum structure known to exist in the projection; it does not describe everything that is allowed to exist.
@@ -30,7 +52,7 @@ From `repo/`, the whole flow is:
 - `TableNode` projects ordinary files as mapping elements keyed by filename stem.
 - `CollectionNode` projects child directories as mapping elements keyed by directory name.
 - `IndexNode` projects the directory's `index.pkl`; its declared children are still required filesystem paths, but are not projected automatically.
-- Validation stops at a collection's dynamic entry boundary. The collection directory is static and required, but particular entry names are not.
+- Collection entry names are dynamic, but every observed collection child is seeded and checked against the collection's entry-node shape.
 
 Example: if `products/` exists but has no product entries, the generated projection still contains:
 
@@ -47,12 +69,13 @@ If `products/` itself is missing, generation fails with the shared missing-direc
 - Declared members remain typed while the design leaves room for additional structure.
 - The generated projection uses `extends "ProjectionSchema.pkl"`, not `amends`, so it can introduce loose top-level properties.
 - Undeclared structural directories are rendered as `Dynamic` objects.
-- Undeclared empty directories cannot currently be discovered or projected; only graph-declared empty paths are seeded.
+- Undeclared empty directories outside graph collection boundaries cannot currently be discovered or projected; static paths and observed collection children are seeded.
 
 ## Entry-tree behavior
 
 - The raw entry tree is built separately from schema rendering.
-- Static directory seeding is a distinct preprocessing step rather than part of file insertion.
+- Directory seeding is a distinct preprocessing step rather than part of file insertion.
+- Statically declared paths and observed collection children are both seeded, including empty directories.
 - `index.pkl` is a filesystem-level projection boundary, independent of whether the graph declares an `IndexNode`.
 - Index collapse is insertion-order independent:
   - If other entries arrive first, `index.pkl` replaces their directory mapping.
@@ -68,6 +91,8 @@ If `products/` itself is missing, generation fails with the shared missing-direc
 - It has no knowledge of `pwd`, `read?`, import globs, or the repository layout.
 - Callers provide a `(Path) -> Boolean` existence predicate.
 - The Pkl command adapts this API with a filesystem `read?` check.
+- Collection expansion uses a caller-provided directory-children function, keeping filesystem enumeration outside the reusable validator.
+- The Pkl-only adapter reads names from directory resources and is less strict about distinguishing files from directories; a native CLI can provide true directory-only children through the same API.
 - A future custom CLI can provide a stricter native filesystem implementation without changing graph traversal.
 - User-facing missing-directory failures are created through `Errors.missingRequiredDirectories`, with optional contextual information.
 
@@ -78,6 +103,7 @@ If `products/` itself is missing, generation fails with the shared missing-direc
   - `DirNode` and loose directory children become properties.
   - `TableNode` and `CollectionNode` children become mapping elements.
 - Indexed entries render as direct imports.
+- A seeded `IndexNode` without `index.pkl` renders as `new Dynamic {}` so normal Pkl type validation rejects it.
 - Declared object properties are amended with readable nested blocks.
 - Generated source intentionally favors readable Pkl over compact output.
 
@@ -95,6 +121,7 @@ If `products/` itself is missing, generation fails with the shared missing-direc
 
 - Mapping-typed properties can default to empty mappings. Schema evaluation alone therefore cannot distinguish an omitted directory from an existing empty directory.
 - That is why filesystem shape validation and tree seeding happen before rendering.
+- Empty collection entries are interpreted by their entry-node type: an empty table may be valid, while an empty index fails validation.
 - `open class` permits extension through subclasses; it does not make arbitrary properties valid on a base-class object literal by itself.
 - Pkl commands cannot orchestrate other processes, so the multi-step generate-and-evaluate workflow uses a small POSIX shell script.
 
