@@ -1,0 +1,2 @@
+module Constants
+const BUNDLE_DIRNAME = "bundle"

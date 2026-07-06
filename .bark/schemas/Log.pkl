@@ -1,0 +1,3 @@
+module Log
+type: String
+msg: String

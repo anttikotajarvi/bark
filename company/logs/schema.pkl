@@ -1,0 +1,1 @@
+amends "@bark/bundle/schemas/Log.pkl"

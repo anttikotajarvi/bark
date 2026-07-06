@@ -1,0 +1,31 @@
+
+// Do not expose this as a public output property.
+const local rootPath = "../../"
+local allImports = import*("../../**.pkl")
+
+function keepImportPath(path: String): Boolean =
+  !path.startsWith("../../.bark/") &&
+  !path.contains("/.bark/") &&
+  !path.endsWith("/index-schema.pkl") &&
+  !path.endsWith("/schema.pkl")
+
+local userTreeImports = new Mapping {
+  for (path in allImports.keys.filter((p) -> keepImportPath(p))) {
+    [path] = allImports[path]
+  }
+}
+class Entry {
+  relPath: String
+  localPath = relPath.replaceFirst(rootPath, "")
+  hidden els = localPath.split("/")
+  anchors = els.dropLast(1)
+  filename = els.last
+  local EXPECTED_EXT = ".pkl"
+  name = filename.replaceLast(EXPECTED_EXT, "")
+}
+entries = userTreeImports.toMap().fold(List(), (acc, name, node) ->
+    acc + List(new Entry {
+        relPath = name
+      })
+  )
+graph = import("../generated/registry.pcf")

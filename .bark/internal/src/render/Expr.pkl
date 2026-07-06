@@ -1,0 +1,36 @@
+module bark.render.Expr
+import "../Util.pkl" as Util
+/// Indent every non-empty line in `text` by `spaces`.
+function indent(text: String, spaces: Int): String =
+  let(prefix = " ".repeat(spaces))
+    text
+      .trim()
+      .split("\n")
+      .map((line) ->
+        if (line.isBlank) ""
+        else "\(prefix)\(line.trim())"
+      )
+      .join("\n")
+
+function mapping(keyType: String, valueType: String): String =
+  "Mapping<\(keyType), \(valueType)>"
+
+function field(name: String, typeExpr: String): String =
+  "\(propertyName(name)): \(typeExpr)"
+
+function classDecl(name: String, contents: String): String =
+  """
+  class \(name) {
+  \(indent(contents, 2))
+  }
+  """.trim()
+
+/// Always backtick generated properties.
+/// This keeps names like `old-products` valid.
+/// Also protects from reserved keywords
+function propertyName(name: String): String =
+  "`\(name)`"
+
+function importAs(path: Util.PklImportPath, name: Util.PklIdentifier): String =
+  "import \"\(path)\" as \(name)"
+

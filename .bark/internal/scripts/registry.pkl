@@ -1,0 +1,34 @@
+extends "pkl:Command"
+
+graph = import("../../registry.pkl").graph
+
+options: Options
+
+class Options {
+  @Flag {
+    shortName = "o"
+    metavar = "file"
+    completionCandidates = "paths"
+  }
+  output: String(endsWith(".pcf"))?
+
+  @BooleanFlag
+  print: Boolean = false
+}
+
+local graphPcf = new PcfRenderer {}.renderDocument(graph)
+
+output {
+  text = if (options.print) graphPcf else "registry ok\n"
+
+  files =
+    if (options.output == null)
+      null
+    else
+      new Mapping {
+        [options.output] = new FileOutput {
+          value = graph
+          renderer = new PcfRenderer {}
+        }
+      }
+}

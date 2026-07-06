@@ -1,0 +1,5 @@
+amends "index-schema.pkl"
+
+name = "Bark LLC"
+employees = 12
+latestLog = import("logs/log2.pkl")

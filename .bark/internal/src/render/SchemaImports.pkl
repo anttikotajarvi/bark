@@ -1,0 +1,58 @@
+module bark.render.SchemaImports
+
+import "../Scaffolding.pkl" as Sys
+import "../Util.pkl" as Util
+import "Expr.pkl" as Expr
+
+typealias SchemaID = String
+
+/// Stable id from schema.
+function schemaId(schema: Sys.Schema): SchemaID =
+  schema.resource.uri
+
+function moduleNameFromSchema(schema: Sys.Schema): String =
+  Util.stem(schema.path)
+
+function collectSchemaListFromNodes(nodes: Mapping<String, Sys.AnyNode>): List<Sys.Schema> =
+  new Listing<List<Sys.Schema>> {
+    for (_, node in nodes) {
+      collectSchemaList(node)
+    }
+  }.fold(List(), (acc, x) -> acc + x)
+
+function collectSchemaList(node: Sys.AnyNode): List<Sys.Schema> =
+  if (node is Sys.TableNode)
+    List(node._schema)
+
+  else if (node is Sys.CollectionNode)
+    collectSchemaList(node._entryNode)
+
+  else if (node is Sys.IndexNode)
+    List(node._schema)
+    // Projection type renderer intentionally ignores index children.
+
+  else if (node is Sys.DirNode)
+    collectSchemaListFromNodes(node._nodes)
+
+  else
+    throw("Unrecognized node type: '\(node.type)'")
+
+function dedupeSchemas(schemas: List<Sys.Schema>): List<Sys.Schema> =
+  schemas.fold(List(), (acc, schema) ->
+    if (acc.any((x) -> schemaId(x) == schemaId(schema)))
+      acc
+    else
+      acc + List(schema)
+  )
+
+function collectSchemas(node: Sys.AnyNode): Mapping<SchemaID, Sys.Schema> =
+  new Mapping<SchemaID, Sys.Schema> {
+    for (schema in dedupeSchemas(collectSchemaList(node))) {
+      [schemaId(schema)] = schema
+    }
+  }
+
+function renderImports(node: Sys.AnyNode): String =
+  collectSchemas(node).toMap().values.map((s) ->
+    Expr.importAs(s.resource.uri, moduleNameFromSchema(s))
+  ).join("\n")

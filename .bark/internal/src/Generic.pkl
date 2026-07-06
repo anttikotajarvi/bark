@@ -1,0 +1,14 @@
+module Generic
+
+import "constants.pkl" as CFG
+
+typealias PosixDirName = String(
+  !contains("/"),
+  !isEmpty
+)
+typealias PosixFileName = PosixDirName
+typealias SchemaPath = String(
+  startsWith("\(CFG.BUNDLE_DIRNAME)/"),
+  !contains(".."),
+  endsWith(".pkl")
+)

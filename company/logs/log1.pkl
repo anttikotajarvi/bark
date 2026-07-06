@@ -1,0 +1,4 @@
+amends "schema.pkl"
+
+type = "info"
+msg = "Created initial company profile."

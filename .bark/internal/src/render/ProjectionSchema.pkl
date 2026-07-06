@@ -1,0 +1,39 @@
+module bark.render.ProjectionSchema
+
+import "../Scaffolding.pkl" as Sys
+import "Expr.pkl" as Expr
+import "GraphTypes.pkl" as GraphTypes
+import "SchemaImports.pkl" as SchemaImports
+
+const ROOT_NAME = "Graph"
+
+// Shorthand for safely adding dependencies
+function dependency(readPath: String, importPath: String, name: String): String =
+  if(read?(readPath) != null)
+    Expr.importAs(importPath, name)
+  else throw("Dependency doesnt exist: \(readPath)")
+
+function compileTypes(graph: Sys.AnyNode): String =
+  let(rootNode = GraphTypes.nodeType(graph, List(ROOT_NAME)))
+  let(rootClass = rootNode.classDecls.filter((c) -> c.name == ROOT_NAME)[0])
+    // unroll root class
+    """
+    \(rootNode.classDecls
+      .filter((c) -> c.name != ROOT_NAME) 
+      .map((c) -> Expr.classDecl(c.name, c.contents))
+      .join("\n"))
+
+    \(rootClass.contents.trim())
+    """.trim()
+
+function render(graph: Sys.AnyNode): String =
+  """
+  open module ProjectionSchema
+  // bark imports
+  \(dependency("../Generic.pkl", "../src/Generic.pkl", "G"))
+
+  // User defined schemas
+  \(SchemaImports.renderImports(graph))
+
+  \(compileTypes(graph))
+  """

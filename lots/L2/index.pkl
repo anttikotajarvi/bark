@@ -1,0 +1,2 @@
+amends "index-schema.pkl"
+lotNum = 2

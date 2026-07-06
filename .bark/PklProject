@@ -1,0 +1,12 @@
+amends "pkl:Project"
+package {
+  name = "bark"
+  baseUri = "package://example.com/core"
+  version = "0.1.0"
+  packageZipUrl = "https://example.com/core@1.zip"
+}
+evaluatorSettings {
+  modulePath {
+    "."
+  }
+}

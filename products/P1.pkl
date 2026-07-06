@@ -1,0 +1,5 @@
+amends "schema.pkl"
+
+id = "P1"
+description = "Bark Basic subscription"
+stock_qty = 100

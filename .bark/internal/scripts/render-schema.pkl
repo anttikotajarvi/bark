@@ -1,0 +1,32 @@
+module bark.scripts.RenderProjectionSchema
+
+extends "pkl:Command"
+
+import "../../registry.pkl" as Registry
+import "../src/render/ProjectionSchema.pkl" as ProjectionSchema
+
+options: Options
+
+class Options {
+  /// Write rendered output to a file instead of stdout.
+  @Flag { shortName = "o" }
+  output: String? = null
+}
+
+rendered = ProjectionSchema.render(Registry.graph)
+
+output {
+  text =
+    if (options.output == null)
+      rendered
+    else
+      ""
+
+  files {
+    when (options.output != null) {
+      ["\(options.output)"] {
+        text = rendered
+      }
+    }
+  }
+}

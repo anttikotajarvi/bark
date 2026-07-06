@@ -1,0 +1,6 @@
+module Company
+import "Log.pkl" as Log
+
+name: String
+employees: Number
+latestLog: Log 

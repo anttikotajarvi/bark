@@ -1,0 +1,4 @@
+amends "schema.pkl"
+
+type = "notice"
+msg = "Updated employee count after onboarding."

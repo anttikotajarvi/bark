@@ -1,0 +1,35 @@
+import "Scaffolding.pkl" as Sys
+import "Generic.pkl" as G
+
+/* Interface */
+function schema(path: G.SchemaPath): Sys.Schema =
+  let (p = path)
+    new Sys.Schema {
+      path = p
+    }
+
+function Dir(nodes: Sys.Children): Sys.DirNode =
+  new Sys.DirNode {
+    _nodes = nodes
+  }
+
+function Table(schema: Sys.Schema): Sys.TableNode =
+  new Sys.TableNode {
+    _schema = schema
+  }
+
+function Collection(entryNode: Sys.AnyNode): Sys.CollectionNode =
+  new Sys.CollectionNode {
+    _entryNode = entryNode
+  }
+
+function IndexedDir(schema: Sys.Schema, nodes: Sys.Children): Sys.IndexNode =
+  new Sys.IndexNode {
+    _schema = schema
+    _nodes = nodes
+  }
+
+function Index(schema: Sys.Schema): Sys.IndexNode =
+  new Sys.IndexNode {
+    _schema = schema
+  }

@@ -1,0 +1,2 @@
+import "src/Scaffolding.pkl" as Sys
+graph: Sys.Graph

@@ -1,0 +1,85 @@
+module bark.render.GraphTypes
+
+import "../Scaffolding.pkl" as Sys
+import "../Util.pkl" as Util
+import "Expr.pkl" as Expr
+
+/// Rendered class declaration, but still structured.
+///
+/// `name` is the generated class name.
+/// `contents` is the raw class body.
+class ClassRender {
+  name: String = ""
+  contents: String = ""
+}
+
+/// Rendered projection type for one graph node.
+///
+/// `expr` is the type expression to use at the parent site.
+/// `classDecls` are helper class declarations needed by that expression.
+class TypeRender {
+  expr: String = ""
+  classDecls: List<ClassRender> = List()
+}
+
+const function moduleNameFromSchema(schema: Sys.Schema): String =
+  Util.stem(schema.path)
+
+/// Class names need to be valid identifiers.
+const function className(path: List<String>): String =
+  path.join("_").replaceAll(Regex("[^A-Za-z0-9_]"), "_")
+
+const function tableNodeType(node: Sys.TableNode): TypeRender =
+  new TypeRender {
+    expr = Expr.mapping("G.PosixFileName", moduleNameFromSchema(node._schema))
+  }
+
+function indexNodeType(node: Sys.IndexNode): TypeRender =
+  new TypeRender {
+    expr = moduleNameFromSchema(node._schema)
+
+    // Index children are intentionally ignored by the projection type renderer.
+    // They are validation/storage structure, not projected structure.
+  }
+
+function collectionNodeType(node: Sys.CollectionNode, path: List<String>): TypeRender =
+  let(entry = nodeType(node._entryNode, path))
+    new TypeRender {
+      expr = Expr.mapping("G.PosixDirName", entry.expr)
+      classDecls = entry.classDecls
+    }
+
+function dirNodeType(dir: Sys.DirNode, path: List<String>): TypeRender =
+  let(body = renderDirBody(dir, path))
+  let(cName = className(path))
+    new TypeRender {
+      expr = cName
+      classDecls = body.classDecls + List(new ClassRender {
+        name = cName
+        contents = body.expr
+      })
+    }
+
+function renderDirBody(dir: Sys.DirNode, path: List<String>): TypeRender =
+  new Listing<TypeRender> {
+    for (name, node in dir._nodes) {
+      let(child = nodeType(node, path + List(name)))
+        new TypeRender {
+          expr = Expr.field(name, child.expr).trim()
+          classDecls = child.classDecls
+        }
+    }
+  }.fold(new TypeRender {}, (acc, x) -> new TypeRender {
+    expr =
+      if (acc.expr == "") x.expr
+      else "\(acc.expr)\n\(x.expr)"
+
+    classDecls = acc.classDecls + x.classDecls
+  })
+
+function nodeType(node: Sys.AnyNode, path: List<String>): TypeRender =
+  if (node is Sys.TableNode) tableNodeType(node)
+  else if (node is Sys.CollectionNode) collectionNodeType(node, path)
+  else if (node is Sys.IndexNode) indexNodeType(node)
+  else if (node is Sys.DirNode) dirNodeType(node, path)
+  else throw("Unrecognized node type: '\(node.type)'")

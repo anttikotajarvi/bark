@@ -1,0 +1,34 @@
+import "Generic.pkl" as G
+import "pkl:reflect" as Reflect
+class Schema {
+  path: G.SchemaPath
+  resource: Resource = read("modulepath:/"+path)
+}
+
+abstract class AnyNode {
+  fixed type: String
+}
+
+typealias Children = Mapping<G.PosixDirName, AnyNode>
+typealias Graph = AnyNode
+
+class DirNode extends AnyNode {
+  fixed type = "dir-node"
+  _nodes: Children
+}
+
+class TableNode extends AnyNode {
+  fixed type = "table-node"
+  _schema: Schema
+}
+
+class CollectionNode extends AnyNode {
+  fixed type = "collection-node"
+  _entryNode: AnyNode
+}
+
+class IndexNode extends AnyNode {
+  fixed type = "index-nodex"
+  _schema: Schema
+  _nodes: Children = new Children {}
+}

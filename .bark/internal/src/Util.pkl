@@ -1,0 +1,17 @@
+module bark.Util
+typealias PklImportPath =
+  String(
+    !isBlank,
+    endsWith(".pkl")
+  )
+
+typealias PklIdentifier =
+  String(
+    matches(Regex("[A-Za-z_][A-Za-z0-9_]*"))
+  )
+
+const function stem(path: String): String =
+  path
+    .replaceAll(Regex("^.*/"), "")
+    .replaceLast(Regex("\\.[^.]*$"), "")
+
