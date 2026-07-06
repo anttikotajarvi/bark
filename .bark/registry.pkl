@@ -21,12 +21,12 @@ graph =
 
     ["archive"] =
       Lib.Dir(new Sys.Children {
-        ["old-products"] = Lib.Table(schemas.product)
-        ["test-products"] = Lib.Table(schemas.product)
-        ["nested"] =
+        ["discontinued-products"] = Lib.Table(schemas.product)
+        ["recalled-products"] = Lib.Table(schemas.product)
+        ["by-year"] =
           Lib.Dir(new Sys.Children {
-            ["nested-old-products"] = Lib.Table(schemas.product)
-            ["nested-test-products"] = Lib.Table(schemas.product)
+            ["2024"] = Lib.Table(schemas.product)
+            ["2025"] = Lib.Table(schemas.product)
           })
       })
   })

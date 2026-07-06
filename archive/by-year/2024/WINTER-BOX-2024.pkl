@@ -1,0 +1,5 @@
+amends "schema.pkl"
+
+id = "WINTER-BOX-2024"
+description = "Bark winter gift box"
+stock_qty = 0

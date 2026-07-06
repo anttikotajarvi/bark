@@ -1,0 +1,5 @@
+amends "schema.pkl"
+
+id = "TRAVEL-ADAPTER"
+description = "Recalled Bark travel adapter"
+stock_qty = 0

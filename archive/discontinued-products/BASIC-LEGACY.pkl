@@ -1,0 +1,5 @@
+amends "schema.pkl"
+
+id = "BASIC-LEGACY"
+description = "Retired Bark Basic subscription"
+stock_qty = 0

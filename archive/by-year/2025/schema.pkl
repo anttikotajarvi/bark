@@ -1,0 +1,1 @@
+amends "modulepath:/.bark/schemas/Product.pkl"

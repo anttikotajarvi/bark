@@ -1,0 +1,5 @@
+amends "schema.pkl"
+
+id = "SUMMER-KIT-2025"
+description = "Bark summer activity kit"
+stock_qty = 0
