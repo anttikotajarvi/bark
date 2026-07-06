@@ -25,12 +25,27 @@ local entries = new Listing<EntryTree.Entry> {
   }
 }.toList()
 
-local staticPaths = DirectoryShape.requireStaticPaths(
+local function directoryResource(path: List<String>): Resource? =
+  read?("\(ROOT_PATH)\(path.join("/"))")
+
+local function directoryChildren(path: List<String>): List<String> =
+  let (resource = directoryResource(path))
+    if (resource == null)
+      List()
+    else
+      resource.text
+        .split("\n")
+        .filter((name) -> !name.isBlank)
+
+// This is the only expected user-data error before Pkl validation. Directory
+// absence cannot be represented after the required paths have been seeded.
+local directoryPaths = DirectoryShape.requireDirectoryShape(
   Registry.graph,
-  (path) -> read?("\(ROOT_PATH)\(path.join("/"))") != null,
+  (path) -> directoryResource(path) != null,
+  (path) -> directoryChildren(path),
   "project root is '\(ROOT_PATH)' relative to project.pkl"
 )
-local seededTree = EntryTree.seed(staticPaths)
+local seededTree = EntryTree.seed(directoryPaths)
 local entryTree = EntryTree.addEntries(seededTree, entries)
 local PATH_PREFIX = options.`path-prefix` ?? ROOT_PATH
 

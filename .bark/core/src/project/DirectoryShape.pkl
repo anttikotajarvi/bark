@@ -5,6 +5,7 @@ import "../Scaffolding.pkl" as Sys
 
 typealias Path = List<String>
 typealias PathExists = (Path) -> Boolean
+typealias DirectoryChildren = (Path) -> List<String>
 
 local function childPaths(
   nodes: Mapping<String, Sys.AnyNode>,
@@ -35,6 +36,42 @@ function staticPaths(graph: Sys.AnyNode): List<Path> =
   else
     List()
 
+local function expandedChildPaths(
+  nodes: Mapping<String, Sys.AnyNode>,
+  parentPath: Path,
+  children: DirectoryChildren
+): List<Path> =
+  new Listing<List<Path>> {
+    for (name, node in nodes) {
+      let (path = parentPath.add(name))
+        List(path) + expandedDescendantPaths(node, path, children)
+    }
+  }.fold(List(), (acc, paths) -> acc + paths)
+
+local function expandedDescendantPaths(
+  node: Sys.AnyNode,
+  path: Path,
+  children: DirectoryChildren
+): List<Path> =
+  if (node is Sys.DirNode)
+    expandedChildPaths(node._nodes, path, children)
+  else if (node is Sys.IndexNode)
+    expandedChildPaths(node._nodes, path, children)
+  else if (node is Sys.CollectionNode)
+    children.apply(path).fold(List(), (acc, name) ->
+      let (entryPath = path.add(name))
+        acc + List(entryPath) +
+          expandedDescendantPaths(node._entryNode, entryPath, children)
+    )
+  else
+    List()
+
+function directoryPaths(
+  graph: Sys.AnyNode,
+  children: DirectoryChildren
+): List<Path> =
+  expandedDescendantPaths(graph, List(), children)
+
 function missingPaths(paths: List<Path>, exists: PathExists): List<Path> =
   paths.filter((path) -> !exists.apply(path))
 
@@ -44,6 +81,21 @@ function requireStaticPaths(
   extraInfo: String?
 ): List<Path> =
   let (paths = staticPaths(graph))
+  let (missing = missingPaths(paths, exists))
+    if (missing.isEmpty)
+      paths
+    else
+      Errors.missingRequiredDirectories(missing, extraInfo)
+
+// Check existence before callers seed these paths. Once seeded, an absent
+// directory is indistinguishable from a valid directory with no entries.
+function requireDirectoryShape(
+  graph: Sys.AnyNode,
+  exists: PathExists,
+  children: DirectoryChildren,
+  extraInfo: String?
+): List<Path> =
+  let (paths = directoryPaths(graph, children))
   let (missing = missingPaths(paths, exists))
     if (missing.isEmpty)
       paths

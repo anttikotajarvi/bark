@@ -49,6 +49,9 @@ function usesElements(graph: Sys.AnyNode, path: List<String>): Boolean =
   let (node = getNode(graph, path))
     node is Sys.TableNode || node is Sys.CollectionNode
 
+function isIndex(graph: Sys.AnyNode, path: List<String>): Boolean =
+  getNode(graph, path) is Sys.IndexNode
+
 function renderObject(
   tree: Mapping,
   graph: Sys.AnyNode,
@@ -79,6 +82,12 @@ function renderValue(
     new CodeRender {
       expr = importEntry(node, pathPrefix)
     }
+  // A seeded IndexNode without index.pkl remains a mapping. Emit syntactically
+  // valid but deliberately type-invalid Pkl and let schema validation fail.
+  else if (node is Mapping && isIndex(graph, path))
+    new CodeRender {
+      expr = "new Dynamic {}"
+    }
   else if (node is Mapping)
     renderObject(node, graph, path, pathPrefix)
   else
@@ -99,7 +108,11 @@ function renderMember(
         }
     // A declared property already exists in ProjectionSchema, so amend its
     // default object directly. This keeps nested generated code compact.
-    else if (node is Mapping && getNode(graph, path) != null)
+    else if (
+      node is Mapping &&
+      getNode(graph, path) != null &&
+      !isIndex(graph, path)
+    )
       let (body = renderMembers(node, graph, path, pathPrefix).expr)
         new CodeRender {
           expr =
