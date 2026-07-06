@@ -1,7 +1,7 @@
 
 // Do not expose this as a public output property.
-const local rootPath = "../../"
-local allImports = import*("../../**.pkl")
+const local rootPath = "../../../"
+local allImports = import*("../../../**.pkl")
 
 function keepImportPath(path: String): Boolean =
   !path.startsWith("../../.bark/") &&
@@ -28,4 +28,6 @@ entries = userTreeImports.toMap().fold(List(), (acc, name, node) ->
         relPath = name
       })
   )
-graph = import("../../registry.pkl").graph
+local graph = import("../../registry.pkl").graph
+
+

@@ -8,23 +8,25 @@ local schemas = new {
   lot = Lib.schema("schemas/Lot.pkl")
   product = Lib.schema("schemas/Product.pkl")
 }
-graph = Lib.Dir(new Sys.Children {
-  ["company"] = Lib.IndexedDir(schemas.company, new Sys.Children {
-    ["logs"] = Lib.Table(schemas.log)
-  })
+graph =
+  Lib.Dir(new Sys.Children {
+    ["company"] =
+      Lib.IndexedDir(schemas.company, new Sys.Children {
+        ["logs"] = Lib.Table(schemas.log)
+      })
 
-  ["products"] = Lib.Table(schemas.product)
+    ["products"] = Lib.Table(schemas.product)
 
-  ["lots"] = Lib.Collection(
-    Lib.Index(schemas.lot)
-  )
+    ["lots"] = Lib.Collection(Lib.Index(schemas.lot))
 
-  ["archive"] = Lib.Dir(new Sys.Children {
-    ["old-products"] = Lib.Table(schemas.product)
-    ["test-products"] = Lib.Table(schemas.product)
-    ["nested"] = Lib.Dir(new Sys.Children {
-      ["nested-old-products"] = Lib.Table(schemas.product)
-      ["nested-test-products"] = Lib.Table(schemas.product)
+    ["archive"] =
+      Lib.Dir(new Sys.Children {
+        ["old-products"] = Lib.Table(schemas.product)
+        ["test-products"] = Lib.Table(schemas.product)
+        ["nested"] =
+          Lib.Dir(new Sys.Children {
+            ["nested-old-products"] = Lib.Table(schemas.product)
+            ["nested-test-products"] = Lib.Table(schemas.product)
+          })
+      })
   })
-  })
-})
