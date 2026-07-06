@@ -1,0 +1,20 @@
+module bark.Errors
+
+function missingRequiredDirectories(
+  paths: List<List<String>>,
+  extraInfo: String?
+): Any =
+  let (pathList = paths
+    .map((path) -> "- \(path.join("/"))")
+    .join("\n"))
+  let (context =
+    if (extraInfo == null || extraInfo.isBlank)
+      ""
+    else
+      "\n\nContext: \(extraInfo)")
+    throw(
+      """
+      Missing required project directories:
+      \(pathList)\(context)
+      """.trim()
+    )

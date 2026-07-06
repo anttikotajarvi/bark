@@ -3,6 +3,7 @@ module bark.scripts.Project
 extends "pkl:Command"
 
 import "../../registry.pkl" as Registry
+import "../src/project/DirectoryShape.pkl" as DirectoryShape
 import "../src/project/EntryTree.pkl" as EntryTree
 import "../src/project/Projection.pkl" as Projection
 
@@ -24,7 +25,13 @@ local entries = new Listing<EntryTree.Entry> {
   }
 }.toList()
 
-local entryTree = EntryTree.build(entries)
+local staticPaths = DirectoryShape.requireStaticPaths(
+  Registry.graph,
+  (path) -> read?("\(ROOT_PATH)\(path.join("/"))") != null,
+  "project root is '\(ROOT_PATH)' relative to project.pkl"
+)
+local seededTree = EntryTree.seed(staticPaths)
+local entryTree = EntryTree.addEntries(seededTree, entries)
 local PATH_PREFIX = options.`path-prefix` ?? ROOT_PATH
 
 options: Options

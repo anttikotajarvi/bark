@@ -1,5 +1,0 @@
-amends "schema.pkl"
-
-id = "P2"
-description = "Bark Premium subscription"
-stock_qty = 42

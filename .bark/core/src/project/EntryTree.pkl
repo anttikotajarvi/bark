@@ -55,8 +55,30 @@ function consumeEntry(
 ): ENode =
   consumeChild(entry, curTree, curPath) ?? curTree
 
-function build(entries: List<Entry>): ENode =
-  entries.fold(
+local function seedPath(curTree: Mapping, path: List<String>): Mapping =
+  if (path.isEmpty)
+    curTree
+  else
+    let (name = path.first)
+      let (oldChild = curTree.getOrNull(name) ?? new Mapping {})
+        if (oldChild is Mapping)
+          (curTree) {
+            [name] = seedPath(oldChild, path.drop(1))
+          }
+        else
+          curTree
+
+function seed(paths: List<List<String>>): Mapping =
+  paths.fold(
     new Mapping {},
-    (tree, entry) -> consumeEntry(entry, tree, entry.anchors)
+    (tree, path) -> seedPath(tree, path)
   )
+
+function addEntries(tree: ENode, entries: List<Entry>): ENode =
+  entries.fold(
+    tree,
+    (result, entry) -> consumeEntry(entry, result, entry.anchors)
+  )
+
+function build(entries: List<Entry>): ENode =
+  addEntries(new Mapping {}, entries)

@@ -1,0 +1,51 @@
+module bark.project.DirectoryShape
+
+import "../Errors.pkl" as Errors
+import "../Scaffolding.pkl" as Sys
+
+typealias Path = List<String>
+typealias PathExists = (Path) -> Boolean
+
+local function childPaths(
+  nodes: Mapping<String, Sys.AnyNode>,
+  parentPath: Path
+): List<Path> =
+  new Listing<List<Path>> {
+    for (name, node in nodes) {
+      let (path = parentPath.add(name))
+        List(path) + descendantPaths(node, path)
+    }
+  }.fold(List(), (acc, paths) -> acc + paths)
+
+local function descendantPaths(node: Sys.AnyNode, path: Path): List<Path> =
+  if (node is Sys.DirNode)
+    childPaths(node._nodes, path)
+  else if (node is Sys.IndexNode)
+    childPaths(node._nodes, path)
+  // Collection entry names are dynamic, so their descendants are not static
+  // graph paths and are intentionally not traversed here.
+  else
+    List()
+
+function staticPaths(graph: Sys.AnyNode): List<Path> =
+  if (graph is Sys.DirNode)
+    childPaths(graph._nodes, List())
+  else if (graph is Sys.IndexNode)
+    childPaths(graph._nodes, List())
+  else
+    List()
+
+function missingPaths(paths: List<Path>, exists: PathExists): List<Path> =
+  paths.filter((path) -> !exists.apply(path))
+
+function requireStaticPaths(
+  graph: Sys.AnyNode,
+  exists: PathExists,
+  extraInfo: String?
+): List<Path> =
+  let (paths = staticPaths(graph))
+  let (missing = missingPaths(paths, exists))
+    if (missing.isEmpty)
+      paths
+    else
+      Errors.missingRequiredDirectories(missing, extraInfo)
