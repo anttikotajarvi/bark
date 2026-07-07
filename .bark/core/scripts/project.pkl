@@ -3,7 +3,7 @@ module bark.scripts.Project
 extends "pkl:Command"
 
 import "../../registry.pkl" as Registry
-import "../src/project/DirectoryShape.pkl" as DirectoryShape
+import "../generated/projection-meta.pkl" as Metadata
 import "../src/project/EntryTree.pkl" as EntryTree
 import "../src/project/Projection.pkl" as Projection
 
@@ -25,27 +25,7 @@ local entries = new Listing<EntryTree.Entry> {
   }
 }.toList()
 
-local function directoryResource(path: List<String>): Resource? =
-  read?("\(ROOT_PATH)\(path.join("/"))")
-
-local function directoryChildren(path: List<String>): List<String> =
-  let (resource = directoryResource(path))
-    if (resource == null)
-      List()
-    else
-      resource.text
-        .split("\n")
-        .filter((name) -> !name.isBlank)
-
-// This is the only expected user-data error before Pkl validation. Directory
-// absence cannot be represented after the required paths have been seeded.
-local directoryPaths = DirectoryShape.requireDirectoryShape(
-  Registry.graph,
-  (path) -> directoryResource(path) != null,
-  (path) -> directoryChildren(path),
-  "project root is '\(ROOT_PATH)' relative to project.pkl"
-)
-local seededTree = EntryTree.seed(directoryPaths)
+local seededTree = EntryTree.seed(Metadata.directoryPaths)
 local entryTree = EntryTree.addEntries(seededTree, entries)
 local PATH_PREFIX = options.`path-prefix` ?? ROOT_PATH
 

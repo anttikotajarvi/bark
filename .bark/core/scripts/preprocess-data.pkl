@@ -1,9 +1,23 @@
 amends "../src/preprocess/PreprocessData.pkl"
 
+import "../../registry.pkl" as Registry
 import "../src/preprocess/ManifestIndex.pkl" as ManifestIndex
+import "../src/project/DirectoryShape.pkl" as DirectoryShape
 
 local const ROOT_PATH = "../../../"                 // these need to be coupled
 local allManifestImports = import*("../../../**.manifest.pkl")
+
+local function directoryResource(path: List<String>): Resource? =
+  read?("\(ROOT_PATH)\(path.join("/"))")
+
+local function directoryChildren(path: List<String>): List<String> =
+  let (resource = directoryResource(path))
+    if (resource == null)
+      List()
+    else
+      resource.text
+        .split("\n")
+        .filter((name) -> !name.isBlank)
 
 local function targetExists(path: String): Boolean =
   read?("\(ROOT_PATH)\(path)") != null
@@ -12,4 +26,11 @@ manifestIndex = ManifestIndex.build(
   ROOT_PATH,
   allManifestImports,
   (path) -> targetExists(path)
+)
+
+directoryPaths = DirectoryShape.requireDirectoryShape(
+  Registry.graph,
+  (path) -> directoryResource(path) != null,
+  (path) -> directoryChildren(path),
+  "project root is '\(ROOT_PATH)' relative to preprocess-data.pkl"
 )
