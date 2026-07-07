@@ -1,5 +1,7 @@
 module bark.preprocess.ManifestIndex
 
+import "../Errors.pkl" as Errors
+
 const MANIFEST_SUFFIX = ".manifest.pkl"
 
 class ManifestRecord {
@@ -17,11 +19,16 @@ class ManifestIndexEntry {
   isDir: Boolean
 }
 
+class ManifestImport {
+  importPath: String
+  localPath: String
+}
+
 typealias ManifestIndex = Mapping<String, ManifestIndexEntry>
 typealias TargetExists = (String) -> Boolean
 
-function keepImportPath(path: String): Boolean =
-  !path.startsWith("../../.bark/") &&
+function keepLocalPath(path: String): Boolean =
+  !path.startsWith(".bark/") &&
   !path.contains("/.bark/")
 
 function localPath(rootPath: String, importPath: String): String =
@@ -47,52 +54,40 @@ function buildRecords(
   rootPath: String,
   imports: Mapping<String, Any>
 ): List<ManifestRecord> =
-  new Listing<ManifestRecord> {
-    for (path in imports.keys.filter((p) -> keepImportPath(p))) {
-      let (lp = localPath(rootPath, path))
-      let (expected = expectedTargetName(lp))
-        new ManifestRecord {
-          importPath = path
-          localPath = lp
-          manifest = imports[path]
-          expectedTarget = expected
-          targetPath = targetPath(lp, expected)
-        }
+  let (manifestImports = new Listing<ManifestImport> {
+    for (path in imports.keys) {
+      new ManifestImport {
+        importPath = path
+        localPath = localPath(rootPath, path)
+      }
     }
-  }.toList()
+  }.toList().filter((entry) -> keepLocalPath(entry.localPath)))
+    new Listing<ManifestRecord> {
+      for (entry in manifestImports) {
+        let (expected = expectedTargetName(entry.localPath))
+          new ManifestRecord {
+            importPath = entry.importPath
+            localPath = entry.localPath
+            manifest = imports[entry.importPath]
+            expectedTarget = expected
+            targetPath = targetPath(entry.localPath, expected)
+          }
+        }
+    }.toList()
 
 function validateSidecar(rec: ManifestRecord): ManifestRecord =
   if (rec.manifest.target != rec.expectedTarget)
-    throw(
-      """
-      Manifest sidecar mismatch.
-
-      Manifest:
-        \(rec.localPath)
-
-      Expected target:
-        \(rec.expectedTarget)
-
-      Actual target:
-        \(rec.manifest.target)
-      """.trim()
+    Errors.manifestSidecarMismatch(
+      rec.localPath,
+      rec.expectedTarget,
+      rec.manifest.target
     )
   else
     rec
 
 function validateTargetExists(targetExists: TargetExists, rec: ManifestRecord): ManifestRecord =
   if (!targetExists.apply(rec.targetPath))
-    throw(
-      """
-      Manifest target missing.
-
-      Manifest:
-        \(rec.localPath)
-
-      Expected target:
-        \(rec.targetPath)
-      """.trim()
-    )
+    Errors.manifestTargetMissing(rec.localPath, rec.targetPath)
   else
     rec
 
@@ -105,12 +100,7 @@ function duplicateIds(records: List<ManifestRecord>): List<String> =
 function validateUniqueIds(records: List<ManifestRecord>): List<ManifestRecord> =
   let (dupes = duplicateIds(records))
     if (!dupes.isEmpty)
-      throw(
-        """
-        Duplicate manifest ids:
-        \(dupes.map((id) -> "- \(id)").join("\n"))
-        """.trim()
-      )
+      Errors.duplicateManifestIds(dupes)
     else
       records
 

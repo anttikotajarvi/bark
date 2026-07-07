@@ -18,3 +18,55 @@ function missingRequiredDirectories(
       \(pathList)\(context)
       """.trim()
     )
+
+function manifestSidecarMismatch(
+  manifestPath: String,
+  expectedTarget: String,
+  actualTarget: String
+): Any =
+  throw(
+    """
+    Manifest sidecar mismatch.
+
+    Manifest:
+      \(manifestPath)
+
+    Expected target:
+      \(expectedTarget)
+
+    Actual target:
+      \(actualTarget)
+    """.trim()
+  )
+
+function manifestTargetMissing(
+  manifestPath: String,
+  targetPath: String
+): Any =
+  throw(
+    """
+    Manifest target missing.
+
+    Manifest:
+      \(manifestPath)
+
+    Expected target:
+      \(targetPath)
+    """.trim()
+  )
+
+function duplicateManifestIds(ids: List<String>): Any =
+  throw(
+    """
+    Duplicate manifest ids:
+    \(ids.map((id) -> "- \(id)").join("\n"))
+    """.trim()
+  )
+
+function projectedManifestIdsMissing(refs: List<Any>): Any =
+  throw(
+    """
+    Projected manifest values missing from manifest index:
+    \(refs.map((ref) -> "- \(ref.id) at \(if (ref.path == "") "(root)" else ref.path)").join("\n"))
+    """.trim()
+  )

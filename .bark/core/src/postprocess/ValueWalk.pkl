@@ -1,0 +1,66 @@
+module bark.postprocess.ValueWalk
+
+class ValueRef {
+  path: String
+  value: Any
+}
+
+local function isLeafClass(name: String): Boolean =
+  name == "Null" ||
+  name == "Boolean" ||
+  name == "String" ||
+  name == "Int" ||
+  name == "Float" ||
+  name == "Duration" ||
+  name == "DataSize"
+
+function isObjectLike(value: Any): Boolean =
+  !(value is Map) &&
+  !(value is Mapping) &&
+  !(value is List) &&
+  !isLeafClass(value.getClass().simpleName)
+
+function childPath(path: String, key: String): String =
+  if (path == "") key else "\(path).\(key)"
+
+function walk(value: Any, path: String): List<ValueRef> =
+  let (p = path)
+  let (v = value)
+  let (own = List(new ValueRef {
+    path = p
+    value = v
+  }))
+    if (value is Map)
+      own + new Listing<ValueRef> {
+        for (key, child in value) {
+          for (ref in walk(child, childPath(path, key.toString()))) {
+            ref
+          }
+        }
+      }.toList()
+    else if (value is Mapping)
+      own + new Listing<ValueRef> {
+        for (key, child in value) {
+          for (ref in walk(child, childPath(path, key.toString()))) {
+            ref
+          }
+        }
+      }.toList()
+    else if (value is List)
+      own + new Listing<ValueRef> {
+        for (index, child in value) {
+          for (ref in walk(child, "\(path)[\(index)]")) {
+            ref
+          }
+        }
+      }.toList()
+    else if (isObjectLike(value))
+      own + new Listing<ValueRef> {
+        for (key, child in value.toMap()) {
+          for (ref in walk(child, childPath(path, key))) {
+            ref
+          }
+        }
+      }.toList()
+    else
+      own

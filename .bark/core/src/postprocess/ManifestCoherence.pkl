@@ -1,0 +1,46 @@
+module bark.postprocess.ManifestCoherence
+
+import "../Errors.pkl" as Errors
+import "../preprocess/ManifestIndex.pkl" as ManifestIndex
+import "SpecialValues.pkl" as SpecialValues
+import "ValueWalk.pkl" as ValueWalk
+
+class ManifestRef {
+  id: String
+  path: String
+}
+
+local function manifestRef(ref: ValueWalk.ValueRef): List<ManifestRef> =
+  if (SpecialValues.isManifest(ref.value))
+    List(new ManifestRef {
+      id = ref.value.id
+      path = ref.path
+    })
+  else
+    List()
+
+function findManifests(value: Any, path: String): List<ManifestRef> =
+  new Listing<ManifestRef> {
+    for (ref in ValueWalk.walk(value, path)) {
+      for (manifest in manifestRef(ref)) {
+        manifest
+      }
+    }
+  }.toList()
+
+function missingManifestRefs(
+  projection: Any,
+  manifestIndex: ManifestIndex.ManifestIndex
+): List<ManifestRef> =
+  findManifests(projection, "")
+    .filter((ref) -> !manifestIndex.containsKey(ref.id))
+
+function check(
+  projection: Any,
+  manifestIndex: ManifestIndex.ManifestIndex
+): Boolean =
+  let (missing = missingManifestRefs(projection, manifestIndex))
+    if (!missing.isEmpty)
+      Errors.projectedManifestIdsMissing(missing)
+    else
+      true

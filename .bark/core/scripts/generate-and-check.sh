@@ -17,10 +17,17 @@ mkdir -p "$GENERATED_DIR"
   --output "$GENERATED_DIR/ProjectionSchema.pkl" \
   --path-prefix modulepath:/.bark/
 
+"$PKL" run --module-path . "$CORE_DIR/scripts/preprocess.pkl" \
+  --output "$GENERATED_DIR/projection-meta.pkl"
+
 "$PKL" run --module-path . "$CORE_DIR/scripts/project.pkl" \
   --output "$GENERATED_DIR/projection.pkl" \
   --path-prefix ../../../
 
+"$PKL" eval --module-path . "$GENERATED_DIR/projection-meta.pkl" >/dev/null
 "$PKL" eval --module-path . "$GENERATED_DIR/projection.pkl" >/dev/null
 
-echo "Generated and validated projection artifacts."
+"$PKL" run --module-path . "$CORE_DIR/scripts/postprocess.pkl" \
+  --output "$GENERATED_DIR/postprocess-output.pcf"
+
+echo "Generated and validated projection, metadata, and postprocess artifacts."
