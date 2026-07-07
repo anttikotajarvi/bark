@@ -1,0 +1,144 @@
+module bark.preprocess.ManifestIndex
+
+const MANIFEST_SUFFIX = ".manifest.pkl"
+
+class ManifestRecord {
+  importPath: String
+  localPath: String
+  manifest: Any
+  expectedTarget: String
+  targetPath: String
+}
+
+class ManifestIndexEntry {
+  manifestPath: String
+  targetPath: String
+  target: String
+  isDir: Boolean
+}
+
+typealias ManifestIndex = Mapping<String, ManifestIndexEntry>
+typealias TargetExists = (String) -> Boolean
+
+function keepImportPath(path: String): Boolean =
+  !path.startsWith("../../.bark/") &&
+  !path.contains("/.bark/")
+
+function localPath(rootPath: String, importPath: String): String =
+  importPath.replaceFirst(rootPath, "")
+
+function expectedTargetName(localPath: String): String =
+  localPath
+    .split("/")
+    .last
+    .replaceLast(MANIFEST_SUFFIX, "")
+
+function parentPath(localPath: String): String =
+  localPath
+    .split("/")
+    .dropLast(1)
+    .join("/")
+
+function targetPath(localPath: String, target: String): String =
+  let (parent = parentPath(localPath))
+    if (parent == "") target else "\(parent)/\(target)"
+
+function buildRecords(
+  rootPath: String,
+  imports: Mapping<String, Any>
+): List<ManifestRecord> =
+  new Listing<ManifestRecord> {
+    for (path in imports.keys.filter((p) -> keepImportPath(p))) {
+      let (lp = localPath(rootPath, path))
+      let (expected = expectedTargetName(lp))
+        new ManifestRecord {
+          importPath = path
+          localPath = lp
+          manifest = imports[path]
+          expectedTarget = expected
+          targetPath = targetPath(lp, expected)
+        }
+    }
+  }.toList()
+
+function validateSidecar(rec: ManifestRecord): ManifestRecord =
+  if (rec.manifest.target != rec.expectedTarget)
+    throw(
+      """
+      Manifest sidecar mismatch.
+
+      Manifest:
+        \(rec.localPath)
+
+      Expected target:
+        \(rec.expectedTarget)
+
+      Actual target:
+        \(rec.manifest.target)
+      """.trim()
+    )
+  else
+    rec
+
+function validateTargetExists(targetExists: TargetExists, rec: ManifestRecord): ManifestRecord =
+  if (!targetExists.apply(rec.targetPath))
+    throw(
+      """
+      Manifest target missing.
+
+      Manifest:
+        \(rec.localPath)
+
+      Expected target:
+        \(rec.targetPath)
+      """.trim()
+    )
+  else
+    rec
+
+function duplicateIds(records: List<ManifestRecord>): List<String> =
+  records
+    .map((rec) -> rec.manifest.id)
+    .filter((id) -> records.filter((rec) -> rec.manifest.id == id).length > 1)
+    .distinct
+
+function validateUniqueIds(records: List<ManifestRecord>): List<ManifestRecord> =
+  let (dupes = duplicateIds(records))
+    if (!dupes.isEmpty)
+      throw(
+        """
+        Duplicate manifest ids:
+        \(dupes.map((id) -> "- \(id)").join("\n"))
+        """.trim()
+      )
+    else
+      records
+
+function validateRecords(
+  targetExists: TargetExists,
+  records: List<ManifestRecord>
+): List<ManifestRecord> =
+  validateUniqueIds(
+    records
+      .map((rec) -> validateSidecar(rec))
+      .map((rec) -> validateTargetExists(targetExists, rec))
+  )
+
+function recordsToIndex(records: List<ManifestRecord>): ManifestIndex =
+  new Mapping<String, ManifestIndexEntry> {
+    for (rec in records) {
+      [rec.manifest.id] = new ManifestIndexEntry {
+        manifestPath = rec.localPath
+        targetPath = rec.targetPath
+        target = rec.manifest.target
+        isDir = rec.manifest.isDir
+      }
+    }
+  }
+
+function build(
+  rootPath: String,
+  imports: Mapping<String, Any>,
+  targetExists: TargetExists
+): ManifestIndex =
+  recordsToIndex(validateRecords(targetExists, buildRecords(rootPath, imports)))

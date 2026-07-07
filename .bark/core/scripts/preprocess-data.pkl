@@ -1,0 +1,15 @@
+amends "../src/preprocess/PreprocessData.pkl"
+
+import "../src/preprocess/ManifestIndex.pkl" as ManifestIndex
+
+local const ROOT_PATH = "../../../"                 // these need to be coupled
+local allManifestImports = import*("../../../**.manifest.pkl")
+
+local function targetExists(path: String): Boolean =
+  read?("\(ROOT_PATH)\(path)") != null
+
+manifestIndex = ManifestIndex.build(
+  ROOT_PATH,
+  allManifestImports,
+  (path) -> targetExists(path)
+)

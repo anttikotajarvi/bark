@@ -1,0 +1,13 @@
+amends "modulepath:/.bark/core/src/Manifest.pkl"
+
+id = "018f4f55-0000-7000-9000-000000000202"
+target = "receipt.pdf"
+description = "Supplier receipt for lot L2."
+
+tags {
+  ["kind"] = "receipt"
+  ["lot"] = "L2"
+  ["supplier"] = "Example Supply Co."
+  ["amount"] = 72.10
+  ["paid"] = false
+}

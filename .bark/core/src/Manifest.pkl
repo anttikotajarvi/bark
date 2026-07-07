@@ -1,0 +1,23 @@
+module Manifest
+
+typealias ManifestId = String(!isEmpty)
+
+typealias ManifestTargetName = String(
+  !contains("/"),
+  !isEmpty,
+  this != ".",
+  this != ".."
+)
+
+typealias TagValue = String | Number | Boolean
+
+hidden fixed __bark = "manifest"
+
+id: ManifestId
+target: ManifestTargetName
+
+description: String? = null
+tags: Mapping<String, TagValue> = new {}
+meta: Any? = null
+
+isDir: Boolean = false

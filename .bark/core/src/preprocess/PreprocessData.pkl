@@ -1,0 +1,5 @@
+open module bark.preprocess.PreprocessData
+
+import "ManifestIndex.pkl" as ManifestIndex
+
+manifestIndex: ManifestIndex.ManifestIndex

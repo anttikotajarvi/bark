@@ -1,0 +1,3 @@
+Inspection photo placeholder index for lot L1.
+
+The directory itself is the manifest target.
