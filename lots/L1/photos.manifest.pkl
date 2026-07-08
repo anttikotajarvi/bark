@@ -1,4 +1,4 @@
-amends "modulepath:/.bark/core/src/Manifest.pkl"
+amends "modulepath:/.bark/core/Manifest.pkl"
 
 id = "018f4f55-0000-7000-9000-000000000102"
 target = "photos"

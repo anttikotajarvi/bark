@@ -4,18 +4,12 @@ extends "pkl:Command"
 
 import "../../registry.pkl" as Registry
 import "../generated/projection-meta.pkl" as Metadata
-import "../src/project/EntryTree.pkl" as EntryTree
-import "../src/project/Projection.pkl" as Projection
+import "../sys/project/EntryTree.pkl" as EntryTree
+import "../sys/project/Projection.pkl" as Projection
 
 
 const ROOT_PATH = "../../../"                 // these need to be coupled 
 local allImports = import*("../../../**.pkl") // <---
-
-local function keepImportPath(path: String): Boolean =
-  !path.startsWith("../../.bark/") &&
-  !path.contains("/.bark/") &&
-  !path.endsWith("/index-schema.pkl") &&
-  !path.endsWith("/schema.pkl")
 
 local entries = new Listing<EntryTree.Entry> {
   for (path in allImports.keys.filter((p) -> keepImportPath(p))) {
@@ -76,3 +70,9 @@ output {
     }
   }
 }
+
+local function keepImportPath(path: String): Boolean =
+  !path.startsWith("../../.bark/") &&
+  !path.contains("/.bark/") &&
+  !path.endsWith("/index-schema.pkl") &&
+  !path.endsWith("/schema.pkl")

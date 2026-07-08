@@ -5,23 +5,14 @@ class ValueRef {
   value: Any
 }
 
-local function isLeafClass(name: String): Boolean =
-  name == "Null" ||
-  name == "Boolean" ||
-  name == "String" ||
-  name == "Int" ||
-  name == "Float" ||
-  name == "Duration" ||
-  name == "DataSize"
+function childPath(path: String, key: String): String =
+  if (path == "") key else "\(path).\(key)"
 
 function isObjectLike(value: Any): Boolean =
   !(value is Map) &&
   !(value is Mapping) &&
   !(value is List) &&
   !isLeafClass(value.getClass().simpleName)
-
-function childPath(path: String, key: String): String =
-  if (path == "") key else "\(path).\(key)"
 
 function walk(value: Any, path: String): List<ValueRef> =
   let (p = path)
@@ -64,3 +55,12 @@ function walk(value: Any, path: String): List<ValueRef> =
       }.toList()
     else
       own
+
+local function isLeafClass(name: String): Boolean =
+  name == "Null" ||
+  name == "Boolean" ||
+  name == "String" ||
+  name == "Int" ||
+  name == "Float" ||
+  name == "Duration" ||
+  name == "DataSize"

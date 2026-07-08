@@ -1,8 +1,8 @@
-amends "../src/postprocess/PostprocessData.pkl"
+amends "../sys/postprocess/PostprocessData.pkl"
 
 import "../generated/projection.pkl" as Projection
 import "../generated/projection-meta.pkl" as Metadata
-import "../src/postprocess/ManifestCoherence.pkl" as ManifestCoherence
+import "../sys/postprocess/ManifestCoherence.pkl" as ManifestCoherence
 
 local _manifestCoherence =
   ManifestCoherence.check(Projection, Metadata.manifestIndex)

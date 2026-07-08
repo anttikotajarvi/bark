@@ -1,7 +1,15 @@
-import "Scaffolding.pkl" as Sys
-import "Generic.pkl" as G
+import "sys/Generic.pkl" as G
+import "sys/GraphModel.pkl" as Sys
 
-/* Interface */
+typealias Schema = Sys.Schema
+typealias AnyNode = Sys.AnyNode
+typealias Children = Sys.Children
+typealias Graph = Sys.Graph
+
+typealias PosixDirName = G.PosixDirName
+typealias PosixFileName = G.PosixFileName
+typealias SchemaPath = G.SchemaPath
+
 function schema(path: G.SchemaPath): Sys.Schema =
   let (p = path)
     new Sys.Schema {

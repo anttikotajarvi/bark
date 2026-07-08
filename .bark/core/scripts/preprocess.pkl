@@ -4,7 +4,7 @@ extends "pkl:Command"
 
 import "preprocess-data.pkl" as Data
 
-const PREPROCESS_SCHEMA_PATH = "modulepath:/.bark/core/src/preprocess/PreprocessData.pkl"
+const PREPROCESS_SCHEMA_PATH = "modulepath:/.bark/core/sys/preprocess/PreprocessData.pkl"
 
 options: Options
 

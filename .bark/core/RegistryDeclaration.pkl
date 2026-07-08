@@ -1,2 +1,3 @@
-import "src/Scaffolding.pkl" as Sys
-graph: Sys.Graph
+import "Meta.pkl" as Meta
+
+graph: Meta.Graph

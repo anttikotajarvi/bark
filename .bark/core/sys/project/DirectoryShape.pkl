@@ -1,68 +1,17 @@
 module bark.project.DirectoryShape
 
 import "../Errors.pkl" as Errors
-import "../Scaffolding.pkl" as Sys
+import "../GraphModel.pkl" as Sys
 
 typealias Path = List<String>
 typealias PathExists = (Path) -> Boolean
 typealias DirectoryChildren = (Path) -> List<String>
-
-local function childPaths(
-  nodes: Mapping<String, Sys.AnyNode>,
-  parentPath: Path
-): List<Path> =
-  new Listing<List<Path>> {
-    for (name, node in nodes) {
-      let (path = parentPath.add(name))
-        List(path) + descendantPaths(node, path)
-    }
-  }.fold(List(), (acc, paths) -> acc + paths)
-
-local function descendantPaths(node: Sys.AnyNode, path: Path): List<Path> =
-  if (node is Sys.DirNode)
-    childPaths(node._nodes, path)
-  else if (node is Sys.IndexNode)
-    childPaths(node._nodes, path)
-  // Collection entry names are dynamic, so their descendants are not static
-  // graph paths and are intentionally not traversed here.
-  else
-    List()
 
 function staticPaths(graph: Sys.AnyNode): List<Path> =
   if (graph is Sys.DirNode)
     childPaths(graph._nodes, List())
   else if (graph is Sys.IndexNode)
     childPaths(graph._nodes, List())
-  else
-    List()
-
-local function expandedChildPaths(
-  nodes: Mapping<String, Sys.AnyNode>,
-  parentPath: Path,
-  children: DirectoryChildren
-): List<Path> =
-  new Listing<List<Path>> {
-    for (name, node in nodes) {
-      let (path = parentPath.add(name))
-        List(path) + expandedDescendantPaths(node, path, children)
-    }
-  }.fold(List(), (acc, paths) -> acc + paths)
-
-local function expandedDescendantPaths(
-  node: Sys.AnyNode,
-  path: Path,
-  children: DirectoryChildren
-): List<Path> =
-  if (node is Sys.DirNode)
-    expandedChildPaths(node._nodes, path, children)
-  else if (node is Sys.IndexNode)
-    expandedChildPaths(node._nodes, path, children)
-  else if (node is Sys.CollectionNode)
-    children.apply(path).fold(List(), (acc, name) ->
-      let (entryPath = path.add(name))
-        acc + List(entryPath) +
-          expandedDescendantPaths(node._entryNode, entryPath, children)
-    )
   else
     List()
 
@@ -101,3 +50,54 @@ function requireDirectoryShape(
       paths
     else
       Errors.missingRequiredDirectories(missing, extraInfo)
+
+local function childPaths(
+  nodes: Mapping<String, Sys.AnyNode>,
+  parentPath: Path
+): List<Path> =
+  new Listing<List<Path>> {
+    for (name, node in nodes) {
+      let (path = parentPath.add(name))
+        List(path) + descendantPaths(node, path)
+    }
+  }.fold(List(), (acc, paths) -> acc + paths)
+
+local function descendantPaths(node: Sys.AnyNode, path: Path): List<Path> =
+  if (node is Sys.DirNode)
+    childPaths(node._nodes, path)
+  else if (node is Sys.IndexNode)
+    childPaths(node._nodes, path)
+  // Collection entry names are dynamic, so their descendants are not static
+  // graph paths and are intentionally not traversed here.
+  else
+    List()
+
+local function expandedChildPaths(
+  nodes: Mapping<String, Sys.AnyNode>,
+  parentPath: Path,
+  children: DirectoryChildren
+): List<Path> =
+  new Listing<List<Path>> {
+    for (name, node in nodes) {
+      let (path = parentPath.add(name))
+        List(path) + expandedDescendantPaths(node, path, children)
+    }
+  }.fold(List(), (acc, paths) -> acc + paths)
+
+local function expandedDescendantPaths(
+  node: Sys.AnyNode,
+  path: Path,
+  children: DirectoryChildren
+): List<Path> =
+  if (node is Sys.DirNode)
+    expandedChildPaths(node._nodes, path, children)
+  else if (node is Sys.IndexNode)
+    expandedChildPaths(node._nodes, path, children)
+  else if (node is Sys.CollectionNode)
+    children.apply(path).fold(List(), (acc, name) ->
+      let (entryPath = path.add(name))
+        acc + List(entryPath) +
+          expandedDescendantPaths(node._entryNode, entryPath, children)
+    )
+  else
+    List()

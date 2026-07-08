@@ -1,6 +1,6 @@
 module bark.render.ProjectionSchema
 
-import "../Scaffolding.pkl" as Sys
+import "../GraphModel.pkl" as Sys
 import "Expr.pkl" as Expr
 import "GraphTypes.pkl" as GraphTypes
 import "SchemaImports.pkl" as SchemaImports
@@ -35,7 +35,7 @@ function render(graph: Sys.AnyNode, pathPrefix: String): String =
   """
   open module ProjectionSchema
   // bark imports
-  \(dependency("../Generic.pkl", "../src/Generic.pkl", "G"))
+  \(dependency("../Generic.pkl", "../sys/Generic.pkl", "G"))
 
   // User defined schemas
   \(SchemaImports.renderImports(graph, pathPrefix))

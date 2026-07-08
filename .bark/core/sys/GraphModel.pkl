@@ -1,5 +1,5 @@
 import "Generic.pkl" as G
-import "pkl:reflect" as Reflect
+
 class Schema {
   path: G.SchemaPath
   hidden PATH_OFFSET = "modulepath:/.bark/" // TODO: Fragile path
@@ -29,7 +29,7 @@ class CollectionNode extends AnyNode {
 }
 
 class IndexNode extends AnyNode {
-  fixed type = "index-nodex"
+  fixed type = "index-node"
   _schema: Schema
   _nodes: Children = new Children {}
 }

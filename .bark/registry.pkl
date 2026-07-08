@@ -1,32 +1,31 @@
 amends "core/RegistryDeclaration.pkl" // Required amendment
-import "core/src/Meta.pkl" as Lib
-import "core/src/Scaffolding.pkl" as Sys
+import "core/Meta.pkl" as Meta
 
 local schemas = new {
-  company = Lib.schema("schemas/Company.pkl")
-  log = Lib.schema("schemas/Log.pkl")
-  lot = Lib.schema("schemas/Lot.pkl")
-  product = Lib.schema("schemas/Product.pkl")
+  company = Meta.schema("schemas/Company.pkl")
+  log = Meta.schema("schemas/Log.pkl")
+  lot = Meta.schema("schemas/Lot.pkl")
+  product = Meta.schema("schemas/Product.pkl")
 }
 graph =
-  Lib.Dir(new Sys.Children {
+  Meta.Dir(new Meta.Children {
     ["company"] =
-      Lib.IndexedDir(schemas.company, new Sys.Children {
-        ["logs"] = Lib.Table(schemas.log)
+      Meta.IndexedDir(schemas.company, new Meta.Children {
+        ["logs"] = Meta.Table(schemas.log)
       })
 
-    ["products"] = Lib.Table(schemas.product)
+    ["products"] = Meta.Table(schemas.product)
 
-    ["lots"] = Lib.Collection(Lib.Index(schemas.lot))
+    ["lots"] = Meta.Collection(Meta.Index(schemas.lot))
 
     ["archive"] =
-      Lib.Dir(new Sys.Children {
-        ["discontinued-products"] = Lib.Table(schemas.product)
-        ["recalled-products"] = Lib.Table(schemas.product)
+      Meta.Dir(new Meta.Children {
+        ["discontinued-products"] = Meta.Table(schemas.product)
+        ["recalled-products"] = Meta.Table(schemas.product)
         ["by-year"] =
-          Lib.Dir(new Sys.Children {
-            ["2024"] = Lib.Table(schemas.product)
-            ["2025"] = Lib.Table(schemas.product)
+          Meta.Dir(new Meta.Children {
+            ["2024"] = Meta.Table(schemas.product)
+            ["2025"] = Meta.Table(schemas.product)
           })
       })
   })

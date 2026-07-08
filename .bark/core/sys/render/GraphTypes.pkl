@@ -1,6 +1,6 @@
 module bark.render.GraphTypes
 
-import "../Scaffolding.pkl" as Sys
+import "../GraphModel.pkl" as Sys
 import "../Util.pkl" as Util
 import "Expr.pkl" as Expr
 

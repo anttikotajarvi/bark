@@ -3,7 +3,7 @@ module bark.scripts.RenderProjectionSchema
 extends "pkl:Command"
 
 import "../../registry.pkl" as Registry
-import "../src/render/ProjectionSchema.pkl" as ProjectionSchema
+import "../sys/render/ProjectionSchema.pkl" as ProjectionSchema
 
 const DEFAULT_PATH_PREFIX = "modulepath:/.bark/"
 

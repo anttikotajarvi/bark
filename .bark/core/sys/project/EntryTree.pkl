@@ -17,6 +17,28 @@ class Entry {
 // invariant that values in an ENode mapping are themselves ENodes.
 typealias ENode = Entry | Mapping<NodeName, Any>
 
+function consumeEntry(
+  entry: Entry,
+  curTree: ENode,
+  curPath: List<String>
+): ENode =
+  consumeChild(entry, curTree, curPath) ?? curTree
+
+function seed(paths: List<List<String>>): Mapping =
+  paths.fold(
+    new Mapping {},
+    (tree, path) -> seedPath(tree, path)
+  )
+
+function addEntries(tree: ENode, entries: List<Entry>): ENode =
+  entries.fold(
+    tree,
+    (result, entry) -> consumeEntry(entry, result, entry.anchors)
+  )
+
+function build(entries: List<Entry>): ENode =
+  addEntries(new Mapping {}, entries)
+
 // Returns null when the entry cannot be inserted. This lets every caller in
 // the recursion reject the change and keep its original node unchanged.
 local function consumeChild(
@@ -48,13 +70,6 @@ local function consumeChild(
               [parentName] = newChild
             }
 
-function consumeEntry(
-  entry: Entry,
-  curTree: ENode,
-  curPath: List<String>
-): ENode =
-  consumeChild(entry, curTree, curPath) ?? curTree
-
 local function seedPath(curTree: Mapping, path: List<String>): Mapping =
   if (path.isEmpty)
     curTree
@@ -67,18 +82,3 @@ local function seedPath(curTree: Mapping, path: List<String>): Mapping =
           }
         else
           curTree
-
-function seed(paths: List<List<String>>): Mapping =
-  paths.fold(
-    new Mapping {},
-    (tree, path) -> seedPath(tree, path)
-  )
-
-function addEntries(tree: ENode, entries: List<Entry>): ENode =
-  entries.fold(
-    tree,
-    (result, entry) -> consumeEntry(entry, result, entry.anchors)
-  )
-
-function build(entries: List<Entry>): ENode =
-  addEntries(new Mapping {}, entries)

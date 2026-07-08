@@ -10,15 +10,6 @@ class ManifestRef {
   path: String
 }
 
-local function manifestRef(ref: ValueWalk.ValueRef): List<ManifestRef> =
-  if (SpecialValues.isManifest(ref.value))
-    List(new ManifestRef {
-      id = ref.value.id
-      path = ref.path
-    })
-  else
-    List()
-
 function findManifests(value: Any, path: String): List<ManifestRef> =
   new Listing<ManifestRef> {
     for (ref in ValueWalk.walk(value, path)) {
@@ -44,3 +35,12 @@ function check(
       Errors.projectedManifestIdsMissing(missing)
     else
       true
+
+local function manifestRef(ref: ValueWalk.ValueRef): List<ManifestRef> =
+  if (SpecialValues.isManifest(ref.value))
+    List(new ManifestRef {
+      id = ref.value.id
+      path = ref.path
+    })
+  else
+    List()
