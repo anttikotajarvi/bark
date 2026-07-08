@@ -3,7 +3,7 @@ module bark.Errors
 function missingRequiredDirectories(
   paths: List<List<String>>,
   extraInfo: String?
-): Any =
+): nothing =
   let (pathList = paths
     .map((path) -> "- \(path.join("/"))")
     .join("\n"))
@@ -23,7 +23,7 @@ function manifestSidecarMismatch(
   manifestPath: String,
   expectedTarget: String,
   actualTarget: String
-): Any =
+): nothing =
   throw(
     """
     Manifest sidecar mismatch.
@@ -42,7 +42,7 @@ function manifestSidecarMismatch(
 function manifestTargetMissing(
   manifestPath: String,
   targetPath: String
-): Any =
+): nothing =
   throw(
     """
     Manifest target missing.
@@ -55,7 +55,7 @@ function manifestTargetMissing(
     """.trim()
   )
 
-function duplicateManifestIds(ids: List<String>): Any =
+function duplicateManifestIds(ids: List<String>): nothing =
   throw(
     """
     Duplicate manifest ids:
@@ -63,7 +63,9 @@ function duplicateManifestIds(ids: List<String>): Any =
     """.trim()
   )
 
-function projectedManifestIdsMissing(refs: List<Any>): Any =
+
+// noinspection UnresolvedElement
+function projectedManifestIdsMissing(refs: List<Any>): nothing =
   throw(
     """
     Projected manifest values missing from manifest index:

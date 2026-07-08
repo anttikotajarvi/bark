@@ -149,7 +149,13 @@ local function getChildNode(
     curNode
   else if (curNode is Sys.CollectionNode)
     getChildNode(curNode._entryNode, path.drop(1))
-  else if (curNode is Sys.DirNode || curNode is Sys.IndexNode)
+  else if (curNode is Sys.DirNode)
+    let (child = curNode._nodes.getOrNull(path.first))
+      if (child == null)
+        null
+      else
+        getChildNode(child, path.drop(1))
+  else if (curNode is Sys.IndexNode)
     let (child = curNode._nodes.getOrNull(path.first))
       if (child == null)
         null

@@ -30,11 +30,11 @@ function requireStaticPaths(
   extraInfo: String?
 ): List<Path> =
   let (paths = staticPaths(graph))
-  let (missing = missingPaths(paths, exists))
-    if (missing.isEmpty)
-      paths
-    else
-      Errors.missingRequiredDirectories(missing, extraInfo)
+    let (missing = missingPaths(paths, exists))
+      if (missing.isEmpty)
+        paths
+      else
+        Errors.missingRequiredDirectories(missing, extraInfo)
 
 // Check existence before callers seed these paths. Once seeded, an absent
 // directory is indistinguishable from a valid directory with no entries.

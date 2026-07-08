@@ -61,7 +61,7 @@ local function consumeChild(
       }
   else
     let (parentName = curPath.first)
-      let (oldChild = curNode.getOrNull(parentName) ?? new Mapping {})
+      let (oldChild = (curNode.getOrNull(parentName) ?? new Mapping<NodeName, Any> {}) as ENode)
         let (newChild = consumeChild(entry, oldChild, curPath.drop(1)))
           if (newChild == null)
             null
@@ -76,9 +76,6 @@ local function seedPath(curTree: Mapping, path: List<String>): Mapping =
   else
     let (name = path.first)
       let (oldChild = curTree.getOrNull(name) ?? new Mapping {})
-        if (oldChild is Mapping)
-          (curTree) {
-            [name] = seedPath(oldChild, path.drop(1))
-          }
-        else
-          curTree
+        (curTree) {
+          [name] = seedPath(oldChild, path.drop(1))
+        }
