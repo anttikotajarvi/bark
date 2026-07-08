@@ -8,8 +8,11 @@ import "../sys/project/EntryTree.pkl" as EntryTree
 import "../sys/project/Projection.pkl" as Projection
 
 
-const ROOT_PATH = "../../../"                 // these need to be coupled 
-local allImports = import*("../../../**.pkl") // <---
+/// Path from .bark/core/scripts back to the data repo root.
+const ROOT_PATH = "../../../"
+
+/// Scan Pkl entries under the data repo root; keepImportPath excludes .bark.
+local allImports = import*("../../../**.pkl")
 
 local entries = new Listing<EntryTree.Entry> {
   for (path in allImports.keys.filter((p) -> keepImportPath(p))) {

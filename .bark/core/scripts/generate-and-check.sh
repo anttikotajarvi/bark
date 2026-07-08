@@ -7,7 +7,9 @@ CORE_DIR=.bark/core
 GENERATED_DIR=$CORE_DIR/generated
 
 if [ ! -f .bark/registry.pkl ] || [ ! -f PklProject ]; then
-  echo "error: run this script from the repo/ directory" >&2
+  echo "error: run this script from the data repo root" >&2
+  echo "       expected .bark/registry.pkl and PklProject in the current directory" >&2
+  echo "       Bark scripts use --module-path ., so modulepath:/ resolves to this root" >&2
   exit 1
 fi
 
