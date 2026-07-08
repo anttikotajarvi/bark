@@ -16,7 +16,32 @@ This is a working decision log, not polished user documentation. It records the 
 From `repo/`, the whole flow is:
 
 ```sh
-./.bark/core/scripts/generate-and-check.sh
+./.dev/full-project
+```
+
+For development throughput tests, run:
+
+```sh
+./.dev/test
+./.dev/test basic
+```
+
+Each fixture is a small dev-only package under `.test-fixtures/<name>/`:
+
+```text
+.test-fixtures/<name>/repo/        # data repo subtree passed as include prefix
+.test-fixtures/<name>/.bark-test/  # fixture registry and pkl:test assertions
+```
+
+The root `.bark/registry.pkl` reads `BARK_TEST_REGISTRY` for this development
+repo's tests and delegates to a fixture registry when the test runner sets it.
+This is project-local test wiring, not Bark core behavior.
+
+To scope generation to a physical subtree while keeping projected paths relative
+to that subtree, pass an include prefix:
+
+```sh
+./.dev/full-project --include-prefix .test-fixtures/basic/repo/
 ```
 
 The script interface is rooted at the data repository directory. Run it from
@@ -89,6 +114,8 @@ If `products/` itself is missing, generation fails with the shared missing-direc
 - Duplicate leaves and file/directory collisions reject the incoming entry and preserve the original tree.
 - Schema files and index-schema files are excluded from projected entries.
 - Files under `.bark/` are excluded from the user entry tree.
+- Files under `.test-fixtures/` are excluded by default unless an include prefix
+  explicitly points inside that tree.
 - Pkl forbids recursive type aliases, so `ENode` uses `Mapping<String, Any>` and the entry-tree functions maintain the recursive invariant.
 
 ## Directory validation
@@ -116,14 +143,21 @@ If `products/` itself is missing, generation fails with the shared missing-direc
 ## Paths and command interfaces
 
 - Both generators are Pkl commands with `--output` and `--path-prefix` options.
-- Projection imports are rendered as `PATH_PREFIX + entry.localPath`.
+- Projection imports are rendered as `PATH_PREFIX + entry.importPath`; normally
+  this equals the logical local path, but include-prefix runs keep imports
+  physical while stripping the prefix from projected keys.
 - Schema import prefixes apply to graph-declared user schemas; Bark's internal `Generic.pkl` import remains relative.
 - Generated files include a do-not-edit comment and the effective generator arguments.
 - Commands are designed to run from the data repo root, `repo/`, with `--module-path .`.
 - Under that contract, `modulepath:/` resolves to the data repo root, so Bark imports keep the form `modulepath:/.bark/core/...` and `modulepath:/.bark/schemas/...`.
 - `.bark/` is Bark-managed content inside the data repo root. It may be a submodule or separately managed directory, but the script interface is anchored at the containing data repo root.
 - `ROOT_PATH = "../../../"` is the path from `.bark/core/scripts` back to the data repo root.
-- The static `import*("../../../**.pkl")` glob scans the data repo root; script filtering excludes `.bark/` from projected user entries.
+- The static `import*("../../../**.pkl")` glob scans the data repo root; shared
+  path filtering excludes `.bark/`, excludes `.test-fixtures/` by default, and
+  applies `bark.includePrefix` when present.
+- `bark.includePrefix` is an external Pkl property passed by the shell wrapper
+  with `-p`. It scopes Pkl file discovery, manifest discovery, and directory
+  shape filesystem reads. It does not change registry loading.
 - The shell wrapper supports overriding the Pkl executable through `PKL`.
 
 ## Pkl behavior that affected the design
