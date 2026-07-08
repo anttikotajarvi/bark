@@ -6,6 +6,7 @@ typealias NodeName = String
 
 class Entry {
   localPath: String
+  importPath: String = localPath
   hidden els = localPath.split("/")
   anchors = els.dropLast(1)
   filename = els.last

@@ -1,6 +1,7 @@
 amends "../sys/preprocess/PreprocessData.pkl"
 
 import "../../registry.pkl" as Registry
+import "../sys/PathScope.pkl" as PathScope
 import "../sys/preprocess/ManifestIndex.pkl" as ManifestIndex
 import "../sys/project/DirectoryShape.pkl" as DirectoryShape
 
@@ -9,9 +10,11 @@ local const ROOT_PATH = "../../../"
 
 /// Scan manifest files under the data repo root; ManifestIndex excludes .bark.
 local allManifestImports = import*("../../../**.manifest.pkl")
+local INCLUDE_PREFIX = PathScope.includePrefix()
 
 manifestIndex = ManifestIndex.build(
   ROOT_PATH,
+  INCLUDE_PREFIX,
   allManifestImports,
   (path) -> targetExists(path)
 )
@@ -20,11 +23,11 @@ directoryPaths = DirectoryShape.requireDirectoryShape(
   Registry.graph,
   (path) -> directoryResource(path) != null,
   (path) -> directoryChildren(path),
-  "project root is '\(ROOT_PATH)' relative to preprocess-data.pkl"
+  "project root is '\(ROOT_PATH)' relative to preprocess-data.pkl; bark.includePrefix is '\(INCLUDE_PREFIX)'"
 )
 
 local function directoryResource(path: List<String>): Resource? =
-  read?("\(ROOT_PATH)\(path.join("/"))")
+  read?(PathScope.physicalPathFromSegments(ROOT_PATH, INCLUDE_PREFIX, path))
 
 local function directoryChildren(path: List<String>): List<String> =
   let (resource = directoryResource(path))
@@ -34,6 +37,7 @@ local function directoryChildren(path: List<String>): List<String> =
       resource.text
         .split("\n")
         .filter((name) -> !name.isBlank)
+        .filter((name) -> PathScope.keepDirectoryChild(INCLUDE_PREFIX, path, name))
 
 local function targetExists(path: String): Boolean =
   read?("\(ROOT_PATH)\(path)") != null

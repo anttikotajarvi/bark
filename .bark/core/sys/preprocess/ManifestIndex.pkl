@@ -1,15 +1,18 @@
 module bark.preprocess.ManifestIndex
 
 import "../Errors.pkl" as Errors
+import "../PathScope.pkl" as PathScope
 
 const MANIFEST_SUFFIX = ".manifest.pkl"
 
 class ManifestRecord {
   importPath: String
   localPath: String
+  physicalLocalPath: String
   manifest: Any
   expectedTarget: String
   targetPath: String
+  physicalTargetPath: String
 }
 
 class ManifestIndexEntry {
@@ -22,17 +25,11 @@ class ManifestIndexEntry {
 class ManifestImport {
   importPath: String
   localPath: String
+  physicalLocalPath: String
 }
 
 typealias ManifestIndex = Mapping<String, ManifestIndexEntry>
 typealias TargetExists = (String) -> Boolean
-
-function keepLocalPath(path: String): Boolean =
-  !path.startsWith(".bark/") &&
-  !path.contains("/.bark/")
-
-function localPath(rootPath: String, importPath: String): String =
-  importPath.replaceFirst(rootPath, "")
 
 function expectedTargetName(localPath: String): String =
   localPath
@@ -52,25 +49,31 @@ function targetPath(localPath: String, target: String): String =
 
 function buildRecords(
   rootPath: String,
+  includePrefix: String,
   imports: Mapping<String, Any>
 ): List<ManifestRecord> =
   let (manifestImports = new Listing<ManifestImport> {
     for (path in imports.keys) {
-      new ManifestImport {
-        importPath = path
-        localPath = localPath(rootPath, path)
+      for (scoped in PathScope.scopedPaths(rootPath, includePrefix, path).filter((p) -> PathScope.keepUserLocalPath(p.localPath))) {
+        new ManifestImport {
+          importPath = path
+          localPath = scoped.localPath
+          physicalLocalPath = scoped.physicalLocalPath
+        }
       }
     }
-  }.toList().filter((entry) -> keepLocalPath(entry.localPath)))
+  }.toList())
     new Listing<ManifestRecord> {
       for (entry in manifestImports) {
         let (expected = expectedTargetName(entry.localPath))
           new ManifestRecord {
             importPath = entry.importPath
             localPath = entry.localPath
+            physicalLocalPath = entry.physicalLocalPath
             manifest = imports[entry.importPath]
             expectedTarget = expected
             targetPath = targetPath(entry.localPath, expected)
+            physicalTargetPath = targetPath(entry.physicalLocalPath, expected)
           }
         }
     }.toList()
@@ -86,7 +89,7 @@ function validateSidecar(rec: ManifestRecord): ManifestRecord =
     rec
 
 function validateTargetExists(targetExists: TargetExists, rec: ManifestRecord): ManifestRecord =
-  if (!targetExists.apply(rec.targetPath))
+  if (!targetExists.apply(rec.physicalTargetPath))
     Errors.manifestTargetMissing(rec.localPath, rec.targetPath)
   else
     rec
@@ -128,7 +131,8 @@ function recordsToIndex(records: List<ManifestRecord>): ManifestIndex =
 
 function build(
   rootPath: String,
+  includePrefix: String,
   imports: Mapping<String, Any>,
   targetExists: TargetExists
 ): ManifestIndex =
-  recordsToIndex(validateRecords(targetExists, buildRecords(rootPath, imports)))
+  recordsToIndex(validateRecords(targetExists, buildRecords(rootPath, includePrefix, imports)))

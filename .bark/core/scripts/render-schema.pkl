@@ -3,6 +3,7 @@ module bark.scripts.RenderProjectionSchema
 extends "pkl:Command"
 
 import "../../registry.pkl" as Registry
+import "../sys/PathScope.pkl" as PathScope
 import "../sys/render/ProjectionSchema.pkl" as ProjectionSchema
 
 const DEFAULT_PATH_PREFIX = "modulepath:/.bark/"
@@ -25,6 +26,7 @@ class Options {
 }
 
 local PATH_PREFIX = options.`path-prefix` ?? DEFAULT_PATH_PREFIX
+local INCLUDE_PREFIX = PathScope.includePrefix()
 
 local generatedHeader =
   """
@@ -32,6 +34,7 @@ local generatedHeader =
   // Arguments:
   //   --output=\(options.output ?? "<stdout>")
   //   --path-prefix=\(PATH_PREFIX)
+  //   -p bark.includePrefix=\(INCLUDE_PREFIX)
   """.trim()
 
 rendered =

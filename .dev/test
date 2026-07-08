@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+PKL=${PKL:-pkl}
+GENERATE=.dev/full-project
+FIXTURES_DIR=.test-fixtures
+
+readarray -t CASES < <(
+  find "$FIXTURES_DIR" -mindepth 3 -maxdepth 3 -path '*/.bark-test/test.pkl' -print \
+    | sed "s#^$FIXTURES_DIR/##; s#/.bark-test/test.pkl\$##" \
+    | sort
+)
+
+case_name=${1:-all}
+
+usage() {
+  printf 'usage: ./.dev/test [all|%s]\n' "${CASES[*]}"
+}
+
+case_exists() {
+  local current_case=$1
+  local known_case
+
+  for known_case in "${CASES[@]}"; do
+    if [ "$known_case" = "$current_case" ]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+include_prefix_for() {
+  local current_case=$1
+  local repo_dir=$FIXTURES_DIR/$current_case/repo
+
+  if ! case_exists "$current_case"; then
+    usage >&2
+    return 1
+  fi
+
+  if [ -d "$repo_dir" ]; then
+    printf '%s' "$repo_dir"
+  fi
+}
+
+test_module_for() {
+  local current_case=$1
+
+  if ! case_exists "$current_case"; then
+    usage >&2
+    return 1
+  fi
+
+  printf '%s/%s/.bark-test/test.pkl' "$FIXTURES_DIR" "$current_case"
+}
+
+run_system() {
+  local current_case=$1
+  local stdout_path=$2
+  local stderr_path=$3
+  local include_prefix
+
+  include_prefix=$(include_prefix_for "$current_case")
+
+  if [ -n "$include_prefix" ]; then
+    "$GENERATE" --include-prefix "$include_prefix" >"$stdout_path" 2>"$stderr_path"
+  else
+    "$GENERATE" >"$stdout_path" 2>"$stderr_path"
+  fi
+}
+
+run_case() {
+  local current_case=$1
+  local output_dir=$2
+  local stdout_path=$output_dir/$current_case.stdout
+  local stderr_path=$output_dir/$current_case.stderr
+  local status
+  local test_module
+
+  printf 'test %s\n' "$current_case"
+  test_module=$(test_module_for "$current_case")
+
+  set +e
+  BARK_TEST_REGISTRY=$current_case run_system "$current_case" "$stdout_path" "$stderr_path"
+  status=$?
+  set -e
+
+  "$PKL" test --module-path . \
+    -p "bark.includePrefix=$(include_prefix_for "$current_case")" \
+    -p "bark.testExitCode=$status" \
+    -p "bark.testStdoutPath=file://$stdout_path" \
+    -p "bark.testStderrPath=file://$stderr_path" \
+    "$test_module"
+}
+
+output_dir=$(mktemp -d "${TMPDIR:-/tmp}/bark-test.XXXXXX")
+
+if [ "$case_name" = all ]; then
+  for current_case in "${CASES[@]}"; do
+    run_case "$current_case" "$output_dir"
+  done
+
+  BARK_TEST_REGISTRY=default "$GENERATE" >/dev/null 2>&1
+else
+  run_case "$case_name" "$output_dir"
+  BARK_TEST_REGISTRY=default "$GENERATE" >/dev/null 2>&1
+fi

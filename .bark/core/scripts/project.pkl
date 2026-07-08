@@ -4,6 +4,7 @@ extends "pkl:Command"
 
 import "../../registry.pkl" as Registry
 import "../generated/projection-meta.pkl" as Metadata
+import "../sys/PathScope.pkl" as PathScope
 import "../sys/project/EntryTree.pkl" as EntryTree
 import "../sys/project/Projection.pkl" as Projection
 
@@ -13,11 +14,15 @@ const ROOT_PATH = "../../../"
 
 /// Scan Pkl entries under the data repo root; keepImportPath excludes .bark.
 local allImports = import*("../../../**.pkl")
+local INCLUDE_PREFIX = PathScope.includePrefix()
 
 local entries = new Listing<EntryTree.Entry> {
-  for (path in allImports.keys.filter((p) -> keepImportPath(p))) {
-    new EntryTree.Entry {
-      localPath = path.replaceFirst(ROOT_PATH, "")
+  for (path in allImports.keys) {
+    for (scoped in PathScope.scopedPaths(ROOT_PATH, INCLUDE_PREFIX, path).filter((p) -> PathScope.keepProjectLocalPath(p.localPath))) {
+      new EntryTree.Entry {
+        localPath = scoped.localPath
+        importPath = scoped.physicalLocalPath
+      }
     }
   }
 }.toList()
@@ -49,6 +54,7 @@ local generatedHeader =
   // Arguments:
   //   --output=\(options.output ?? "<stdout>")
   //   --path-prefix=\(PATH_PREFIX)
+  //   -p bark.includePrefix=\(INCLUDE_PREFIX)
   """.trim()
 
 rendered =
@@ -73,9 +79,3 @@ output {
     }
   }
 }
-
-local function keepImportPath(path: String): Boolean =
-  !path.startsWith("../../.bark/") &&
-  !path.contains("/.bark/") &&
-  !path.endsWith("/index-schema.pkl") &&
-  !path.endsWith("/schema.pkl")

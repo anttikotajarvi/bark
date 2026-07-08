@@ -1,0 +1,107 @@
+module bark.PathScope
+
+const TEST_FIXTURES_DIR = ".test-fixtures"
+const INCLUDE_PREFIX_PROP = "prop:bark.includePrefix"
+
+class ScopedPath {
+  importPath: String
+  physicalLocalPath: String
+  localPath: String
+}
+
+function includePrefix(): String =
+  normalizePrefix((read?(INCLUDE_PREFIX_PROP) ?? "") as String)
+
+function normalizePrefix(prefix: String): String =
+  let (stripped = stripDotSlash(prefix.trim()))
+    if (stripped == "" || stripped == ".")
+      ""
+    else if (stripped.startsWith("/"))
+      throw("bark.includePrefix must be relative to the data repo root: \(prefix)")
+    else if (stripped.endsWith("/"))
+      stripped
+    else
+      "\(stripped)/"
+
+function scopedPath(
+  rootPath: String,
+  includePrefix: String,
+  importPath: String
+): ScopedPath? =
+  let (physical = importPath.replaceFirst(rootPath, ""))
+  let (prefix = normalizePrefix(includePrefix))
+    if (!inScope(physical, prefix))
+      null
+    else
+      new ScopedPath {
+        importPath = importPath
+        physicalLocalPath = physical
+        localPath = stripIncludePrefix(physical, prefix)
+      }
+
+function scopedPaths(
+  rootPath: String,
+  includePrefix: String,
+  importPath: String
+): List<ScopedPath> =
+  let (scoped = scopedPath(rootPath, includePrefix, importPath))
+    if (scoped == null)
+      List()
+    else
+      List(scoped)
+
+function physicalPath(
+  rootPath: String,
+  includePrefix: String,
+  logicalPath: String
+): String =
+  "\(rootPath)\(normalizePrefix(includePrefix))\(logicalPath)"
+
+function physicalPathFromSegments(
+  rootPath: String,
+  includePrefix: String,
+  path: List<String>
+): String =
+  physicalPath(rootPath, includePrefix, path.join("/"))
+
+function keepUserLocalPath(path: String): Boolean =
+  !hasBarkSegment(path)
+
+function keepProjectLocalPath(path: String): Boolean =
+  keepUserLocalPath(path) &&
+    !path.endsWith("/index-schema.pkl") &&
+    !path.endsWith("/schema.pkl")
+
+function keepDirectoryChild(
+  includePrefix: String,
+  path: List<String>,
+  name: String
+): Boolean =
+  name != ".bark" &&
+    !(normalizePrefix(includePrefix) == "" && path.isEmpty && name == TEST_FIXTURES_DIR)
+
+local function inScope(path: String, includePrefix: String): Boolean =
+  if (includePrefix == "")
+    !isTestFixturePath(path)
+  else
+    path.startsWith(includePrefix)
+
+local function isTestFixturePath(path: String): Boolean =
+  path == TEST_FIXTURES_DIR || path.startsWith("\(TEST_FIXTURES_DIR)/")
+
+local function stripIncludePrefix(path: String, includePrefix: String): String =
+  if (includePrefix == "")
+    path
+  else
+    path.replaceFirst(includePrefix, "")
+
+local function hasBarkSegment(path: String): Boolean =
+  path == ".bark" ||
+    path.startsWith(".bark/") ||
+    path.contains("/.bark/")
+
+local function stripDotSlash(path: String): String =
+  if (path.startsWith("./"))
+    stripDotSlash(path.replaceFirst("./", ""))
+  else
+    path

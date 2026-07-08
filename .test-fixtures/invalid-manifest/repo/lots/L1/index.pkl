@@ -1,0 +1,4 @@
+amends "index-schema.pkl"
+
+lotNum = 201
+receipt = import("receipt.pdf.manifest.pkl")

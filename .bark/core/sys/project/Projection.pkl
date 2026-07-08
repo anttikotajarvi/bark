@@ -26,7 +26,7 @@ function getNode(graph: Sys.AnyNode, path: List<String>): Sys.AnyNode? =
   getChildNode(graph, path)
 
 function importEntry(entry: EntryTree.Entry, pathPrefix: String): String =
-  "import(\"\(pathPrefix)\(entry.localPath)\")"
+  "import(\"\(pathPrefix)\(entry.importPath)\")"
 
 function usesElements(graph: Sys.AnyNode, path: List<String>): Boolean =
   let (node = getNode(graph, path))

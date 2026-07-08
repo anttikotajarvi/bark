@@ -1,0 +1,17 @@
+amends "pkl:test"
+
+local exitCode = (read?("prop:bark.testExitCode") ?? "0") as String
+local stderrPath = (read?("prop:bark.testStderrPath") ?? "") as String
+local stderrText = if (stderrPath == "") "" else read(stderrPath).text
+
+facts {
+  ["generation fails"] {
+    exitCode != "0"
+  }
+
+  ["manifest target diagnostic is reported"] {
+    stderrText.contains("Manifest target missing")
+    stderrText.contains("lots/L1/receipt.pdf.manifest.pkl")
+    stderrText.contains("lots/L1/receipt.pdf")
+  }
+}

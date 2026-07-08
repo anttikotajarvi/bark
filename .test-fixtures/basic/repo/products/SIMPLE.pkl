@@ -1,0 +1,5 @@
+amends "schema.pkl"
+
+id = "SIMPLE"
+description = "Simple fixture product"
+stock_qty = 3
