@@ -19,6 +19,12 @@ From `repo/`, the whole flow is:
 ./.bark/core/scripts/generate-and-check.sh
 ```
 
+The script interface is rooted at the data repository directory. Run it from
+`repo/`, and run Pkl with `--module-path .`; under this contract,
+`modulepath:/` resolves to the data repo root. The `.bark/` directory is
+Bark-managed content inside that root. It may be managed separately, such as as
+a submodule, but the containing data repo root remains the command boundary.
+
 ## Failure policy
 
 The guiding rule is: generate Pkl whenever the observed state can be represented, then let Pkl validate its meaning. Generated source may therefore be syntactically valid while deliberately failing the generated schema.
@@ -113,8 +119,11 @@ If `products/` itself is missing, generation fails with the shared missing-direc
 - Projection imports are rendered as `PATH_PREFIX + entry.localPath`.
 - Schema import prefixes apply to graph-declared user schemas; Bark's internal `Generic.pkl` import remains relative.
 - Generated files include a do-not-edit comment and the effective generator arguments.
-- Commands are currently designed to run from `repo/` with `--module-path .`.
-- `ROOT_PATH` and the static `import*` glob in `scripts/project.pkl` describe the same boundary and must remain coupled.
+- Commands are designed to run from the data repo root, `repo/`, with `--module-path .`.
+- Under that contract, `modulepath:/` resolves to the data repo root, so Bark imports keep the form `modulepath:/.bark/core/...` and `modulepath:/.bark/schemas/...`.
+- `.bark/` is Bark-managed content inside the data repo root. It may be a submodule or separately managed directory, but the script interface is anchored at the containing data repo root.
+- `ROOT_PATH = "../../../"` is the path from `.bark/core/scripts` back to the data repo root.
+- The static `import*("../../../**.pkl")` glob scans the data repo root; script filtering excludes `.bark/` from projected user entries.
 - The shell wrapper supports overriding the Pkl executable through `PKL`.
 
 ## Pkl behavior that affected the design
