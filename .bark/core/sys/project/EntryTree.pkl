@@ -10,8 +10,7 @@ class Entry {
   hidden els = localPath.split("/")
   anchors = els.dropLast(1)
   filename = els.last
-  local EXPECTED_EXT = ".pkl"
-  name = filename.replaceLast(EXPECTED_EXT, "")
+  name = filename.replaceLast(CFG.PKL_EXTENSION, "")
 }
 
 // Pkl type aliases cannot be recursive, so the functions below own the

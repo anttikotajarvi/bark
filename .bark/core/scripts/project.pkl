@@ -5,6 +5,7 @@ extends "pkl:Command"
 import "../../registry.pkl" as Registry
 import "../generated/projection-meta.pkl" as Metadata
 import "../sys/PathScope.pkl" as PathScope
+import "../sys/constants.pkl" as CFG
 import "../sys/project/EntryTree.pkl" as EntryTree
 import "../sys/project/Projection.pkl" as Projection
 
@@ -54,7 +55,7 @@ local generatedHeader =
   // Arguments:
   //   --output=\(options.output ?? "<stdout>")
   //   --path-prefix=\(PATH_PREFIX)
-  //   -p bark.includePrefix=\(INCLUDE_PREFIX)
+  //   -p \(CFG.INCLUDE_PREFIX_NAME)=\(INCLUDE_PREFIX)
   """.trim()
 
 rendered =

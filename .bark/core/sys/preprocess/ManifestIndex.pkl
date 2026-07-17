@@ -1,9 +1,8 @@
 module bark.preprocess.ManifestIndex
 
+import "../constants.pkl" as CFG
 import "../Errors.pkl" as Errors
 import "../PathScope.pkl" as PathScope
-
-const MANIFEST_SUFFIX = ".manifest.pkl"
 
 class ManifestRecord {
   importPath: String
@@ -35,7 +34,7 @@ function expectedTargetName(localPath: String): String =
   localPath
     .split("/")
     .last
-    .replaceLast(MANIFEST_SUFFIX, "")
+    .replaceLast(CFG.MANIFEST_SUFFIX, "")
 
 function parentPath(localPath: String): String =
   localPath

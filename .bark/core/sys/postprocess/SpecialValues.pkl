@@ -1,14 +1,12 @@
 module bark.postprocess.SpecialValues
 
+import "../constants.pkl" as CFG
 import "ValueWalk.pkl" as ValueWalk
-
-const MARKER_FIELD = "__bark"
-const MANIFEST_MARKER = "manifest"
 
 function hasMarker(value: Any, marker: String): Boolean =
   ValueWalk.isObjectLike(value) &&
-  value.hasProperty(MARKER_FIELD) &&
-  value.getPropertyOrNull(MARKER_FIELD) == marker
+  value.hasProperty(CFG.BARK_MARKER_FIELD) &&
+  value.getPropertyOrNull(CFG.BARK_MARKER_FIELD) == marker
 
 function isManifest(value: Any): Boolean =
-  hasMarker(value, MANIFEST_MARKER)
+  hasMarker(value, CFG.MANIFEST_MARKER)

@@ -1,3 +1,19 @@
 module Constants
+
+const BARK_DIRNAME = ".bark"
+const BARK_MODULEPATH_PREFIX = "modulepath:/\(BARK_DIRNAME)/"
 const BUNDLE_DIRNAME = "bundle"
+const TEST_FIXTURES_DIR = ".test-fixtures"
+
+const PKL_EXTENSION = ".pkl"
 const INDEX_NAME = "index"
+const INDEX_FILENAME = "\(INDEX_NAME)\(PKL_EXTENSION)"
+const SCHEMA_FILENAME = "schema.pkl"
+const INDEX_SCHEMA_FILENAME = "index-schema.pkl"
+
+const MANIFEST_SUFFIX = ".manifest.pkl"
+const BARK_MARKER_FIELD = "__bark"
+const MANIFEST_MARKER = "manifest"
+
+const INCLUDE_PREFIX_NAME = "bark.includePrefix"
+const INCLUDE_PREFIX_PROP = "prop:\(INCLUDE_PREFIX_NAME)"

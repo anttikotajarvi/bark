@@ -10,5 +10,5 @@ typealias PosixFileName = PosixDirName
 typealias SchemaPath = String(
   //startsWith("\(CFG.BUNDLE_DIRNAME)/"),
   !contains(".."),
-  endsWith(".pkl")
+  endsWith(CFG.PKL_EXTENSION)
 )

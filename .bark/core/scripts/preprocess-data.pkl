@@ -2,6 +2,7 @@ amends "../sys/preprocess/PreprocessData.pkl"
 
 import "../../registry.pkl" as Registry
 import "../sys/PathScope.pkl" as PathScope
+import "../sys/constants.pkl" as CFG
 import "../sys/preprocess/ManifestIndex.pkl" as ManifestIndex
 import "../sys/project/DirectoryShape.pkl" as DirectoryShape
 
@@ -23,7 +24,7 @@ directoryPaths = DirectoryShape.requireDirectoryShape(
   Registry.graph,
   (path) -> directoryResource(path) != null,
   (path) -> directoryChildren(path),
-  "project root is '\(ROOT_PATH)' relative to preprocess-data.pkl; bark.includePrefix is '\(INCLUDE_PREFIX)'"
+  "project root is '\(ROOT_PATH)' relative to preprocess-data.pkl; \(CFG.INCLUDE_PREFIX_NAME) is '\(INCLUDE_PREFIX)'"
 )
 
 local function directoryResource(path: List<String>): Resource? =

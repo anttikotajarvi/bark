@@ -1,7 +1,6 @@
 module bark.PathScope
 
-const TEST_FIXTURES_DIR = ".test-fixtures"
-const INCLUDE_PREFIX_PROP = "prop:bark.includePrefix"
+import "constants.pkl" as CFG
 
 class ScopedPath {
   importPath: String
@@ -10,14 +9,14 @@ class ScopedPath {
 }
 
 function includePrefix(): String =
-  normalizePrefix((read?(INCLUDE_PREFIX_PROP) ?? "") as String)
+  normalizePrefix((read?(CFG.INCLUDE_PREFIX_PROP) ?? "") as String)
 
 function normalizePrefix(prefix: String): String =
   let (stripped = stripDotSlash(prefix.trim()))
     if (stripped == "" || stripped == ".")
       ""
     else if (stripped.startsWith("/"))
-      throw("bark.includePrefix must be relative to the data repo root: \(prefix)")
+      throw("\(CFG.INCLUDE_PREFIX_NAME) must be relative to the data repo root: \(prefix)")
     else if (stripped.endsWith("/"))
       stripped
     else
@@ -69,16 +68,16 @@ function keepUserLocalPath(path: String): Boolean =
 
 function keepProjectLocalPath(path: String): Boolean =
   keepUserLocalPath(path) &&
-    !path.endsWith("/index-schema.pkl") &&
-    !path.endsWith("/schema.pkl")
+    !path.endsWith("/\(CFG.INDEX_SCHEMA_FILENAME)") &&
+    !path.endsWith("/\(CFG.SCHEMA_FILENAME)")
 
 function keepDirectoryChild(
   includePrefix: String,
   path: List<String>,
   name: String
 ): Boolean =
-  name != ".bark" &&
-    !(normalizePrefix(includePrefix) == "" && path.isEmpty && name == TEST_FIXTURES_DIR)
+  name != CFG.BARK_DIRNAME &&
+    !(normalizePrefix(includePrefix) == "" && path.isEmpty && name == CFG.TEST_FIXTURES_DIR)
 
 local function inScope(path: String, includePrefix: String): Boolean =
   if (includePrefix == "")
@@ -87,7 +86,7 @@ local function inScope(path: String, includePrefix: String): Boolean =
     path.startsWith(includePrefix)
 
 local function isTestFixturePath(path: String): Boolean =
-  path == TEST_FIXTURES_DIR || path.startsWith("\(TEST_FIXTURES_DIR)/")
+  path == CFG.TEST_FIXTURES_DIR || path.startsWith("\(CFG.TEST_FIXTURES_DIR)/")
 
 local function stripIncludePrefix(path: String, includePrefix: String): String =
   if (includePrefix == "")
@@ -96,9 +95,9 @@ local function stripIncludePrefix(path: String, includePrefix: String): String =
     path.replaceFirst(includePrefix, "")
 
 local function hasBarkSegment(path: String): Boolean =
-  path == ".bark" ||
-    path.startsWith(".bark/") ||
-    path.contains("/.bark/")
+  path == CFG.BARK_DIRNAME ||
+    path.startsWith("\(CFG.BARK_DIRNAME)/") ||
+    path.contains("/\(CFG.BARK_DIRNAME)/")
 
 local function stripDotSlash(path: String): String =
   if (path.startsWith("./"))

@@ -4,9 +4,10 @@ extends "pkl:Command"
 
 import "../../registry.pkl" as Registry
 import "../sys/PathScope.pkl" as PathScope
+import "../sys/constants.pkl" as CFG
 import "../sys/render/ProjectionSchema.pkl" as ProjectionSchema
 
-const DEFAULT_PATH_PREFIX = "modulepath:/.bark/"
+const DEFAULT_PATH_PREFIX = CFG.BARK_MODULEPATH_PREFIX
 
 options: Options
 
@@ -34,7 +35,7 @@ local generatedHeader =
   // Arguments:
   //   --output=\(options.output ?? "<stdout>")
   //   --path-prefix=\(PATH_PREFIX)
-  //   -p bark.includePrefix=\(INCLUDE_PREFIX)
+  //   -p \(CFG.INCLUDE_PREFIX_NAME)=\(INCLUDE_PREFIX)
   """.trim()
 
 rendered =
