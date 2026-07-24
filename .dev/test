@@ -90,7 +90,6 @@ run_case() {
   set -e
 
   "$PKL" test --module-path . \
-    -p "bark.includePrefix=$(include_prefix_for "$current_case")" \
     -p "bark.testExitCode=$status" \
     -p "bark.testStdoutPath=file://$stdout_path" \
     -p "bark.testStderrPath=file://$stderr_path" \

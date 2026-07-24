@@ -15,11 +15,10 @@ const ROOT_PATH = "../../../"
 
 /// Scan Pkl entries under the data repo root; keepImportPath excludes .bark.
 local allImports = import*("../../../**.pkl")
-local INCLUDE_PREFIX = PathScope.includePrefix()
 
 local entries = new Listing<EntryTree.Entry> {
   for (path in allImports.keys) {
-    for (scoped in PathScope.scopedPaths(ROOT_PATH, INCLUDE_PREFIX, path).filter((p) -> PathScope.keepProjectLocalPath(p.localPath))) {
+    for (scoped in PathScope.scopedPaths(ROOT_PATH, path).filter((p) -> PathScope.keepProjectLocalPath(p.localPath))) {
       new EntryTree.Entry {
         localPath = scoped.localPath
         importPath = scoped.physicalLocalPath
@@ -55,7 +54,7 @@ local generatedHeader =
   // Arguments:
   //   --output=\(options.output ?? "<stdout>")
   //   --path-prefix=\(PATH_PREFIX)
-  //   -p \(CFG.INCLUDE_PREFIX_NAME)=\(INCLUDE_PREFIX)
+  //   \(CFG.INCLUDE_PREFIX_ENV_VAR)=\(CFG.INCLUDE_PREFIX)
   """.trim()
 
 rendered =

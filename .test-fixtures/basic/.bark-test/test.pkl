@@ -1,6 +1,7 @@
 amends "pkl:test"
 
 import "modulepath:/.bark/core/generated/projection.pkl" as Projection
+import "modulepath:/.bark/core/generated/projection-meta.pkl" as Metadata
 
 local exitCode = (read?("prop:bark.testExitCode") ?? "1") as String
 local stdoutPath = (read?("prop:bark.testStdoutPath") ?? "") as String
@@ -23,5 +24,9 @@ facts {
     !Projection.hasProperty("company")
     !Projection.hasProperty("lots")
     !Projection.hasProperty("archive")
+  }
+
+  ["include prefix is not persisted in metadata"] {
+    !Metadata.hasProperty("includePrefix")
   }
 }

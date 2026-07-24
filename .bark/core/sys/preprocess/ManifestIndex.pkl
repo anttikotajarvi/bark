@@ -48,12 +48,11 @@ function targetPath(localPath: String, target: String): String =
 
 function buildRecords(
   rootPath: String,
-  includePrefix: String,
   imports: Mapping<String, Any>
 ): List<ManifestRecord> =
   let (manifestImports = new Listing<ManifestImport> {
     for (path in imports.keys) {
-      for (scoped in PathScope.scopedPaths(rootPath, includePrefix, path).filter((p) -> PathScope.keepUserLocalPath(p.localPath))) {
+      for (scoped in PathScope.scopedPaths(rootPath, path).filter((p) -> PathScope.keepUserLocalPath(p.localPath))) {
         new ManifestImport {
           importPath = path
           localPath = scoped.localPath
@@ -130,8 +129,7 @@ function recordsToIndex(records: List<ManifestRecord>): ManifestIndex =
 
 function build(
   rootPath: String,
-  includePrefix: String,
   imports: Mapping<String, Any>,
   targetExists: TargetExists
 ): ManifestIndex =
-  recordsToIndex(validateRecords(targetExists, buildRecords(rootPath, includePrefix, imports)))
+  recordsToIndex(validateRecords(targetExists, buildRecords(rootPath, imports)))

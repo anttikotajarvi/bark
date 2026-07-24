@@ -15,5 +15,5 @@ const MANIFEST_SUFFIX = ".manifest.pkl"
 const BARK_MARKER_FIELD = "__bark"
 const MANIFEST_MARKER = "manifest"
 
-const INCLUDE_PREFIX_NAME = "bark.includePrefix"
-const INCLUDE_PREFIX_PROP = "prop:\(INCLUDE_PREFIX_NAME)"
+const INCLUDE_PREFIX_ENV_VAR = "BARK_INCLUDE_PREFIX"
+const INCLUDE_PREFIX = (read?("env:\(INCLUDE_PREFIX_ENV_VAR)") ?? "") as String

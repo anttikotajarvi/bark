@@ -33,29 +33,25 @@ fi
 
 mkdir -p "$GENERATED_DIR"
 
-run_pkl() {
-  if [ -n "$INCLUDE_PREFIX" ]; then
-    "$PKL" run --module-path . -p "bark.includePrefix=$INCLUDE_PREFIX" "$@"
-  else
-    "$PKL" run --module-path . "$@"
-  fi
-}
+if [ -n "$INCLUDE_PREFIX" ]; then
+  export BARK_INCLUDE_PREFIX="$INCLUDE_PREFIX"
+fi
 
-run_pkl "$CORE_DIR/scripts/render-schema.pkl" \
+"$PKL" run --module-path . "$CORE_DIR/scripts/render-schema.pkl" \
   --output "$GENERATED_DIR/ProjectionSchema.pkl" \
   --path-prefix modulepath:/.bark/
 
-run_pkl "$CORE_DIR/scripts/preprocess.pkl" \
+"$PKL" run --module-path . "$CORE_DIR/scripts/preprocess.pkl" \
   --output "$GENERATED_DIR/projection-meta.pkl"
 
-run_pkl "$CORE_DIR/scripts/project.pkl" \
+"$PKL" run --module-path . "$CORE_DIR/scripts/project.pkl" \
   --output "$GENERATED_DIR/projection.pkl" \
   --path-prefix ../../../
 
 "$PKL" eval --module-path . "$GENERATED_DIR/projection-meta.pkl" >/dev/null
 "$PKL" eval --module-path . "$GENERATED_DIR/projection.pkl" >/dev/null
 
-run_pkl "$CORE_DIR/scripts/postprocess.pkl" \
+"$PKL" run --module-path . "$CORE_DIR/scripts/postprocess.pkl" \
   --output "$GENERATED_DIR/postprocess-output.pcf"
 
 echo "Generated and validated projection, metadata, and postprocess artifacts."
