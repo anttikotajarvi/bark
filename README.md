@@ -38,7 +38,7 @@ repo's tests and delegates to a fixture registry when the test runner sets it.
 This is project-local test wiring, not Bark core behavior.
 
 To scope generation to a physical subtree while keeping projected paths relative
-to that subtree, pass an include prefix:
+to that subtree, pass an include prefix through the dev wrapper:
 
 ```sh
 ./.dev/full-project --include-prefix .test-fixtures/basic/repo/
@@ -154,10 +154,15 @@ If `products/` itself is missing, generation fails with the shared missing-direc
 - `ROOT_PATH = "../../../"` is the path from `.bark/core/scripts` back to the data repo root.
 - The static `import*("../../../**.pkl")` glob scans the data repo root; shared
   path filtering excludes `.bark/`, excludes `.test-fixtures/` by default, and
-  applies `bark.includePrefix` when present.
-- `bark.includePrefix` is an external Pkl property passed by the shell wrapper
-  with `-p`. It scopes Pkl file discovery, manifest discovery, and directory
-  shape filesystem reads. It does not change registry loading.
+  applies `BARK_INCLUDE_PREFIX` when present.
+- `BARK_INCLUDE_PREFIX` scopes Pkl file discovery, manifest discovery, and
+  directory shape filesystem reads. Bark reads it through the shared constants
+  module, and `PathScope.pkl` applies it directly. It does not change registry
+  loading.
+- `.dev/full-project --include-prefix` is development wrapper sugar for setting
+  `BARK_INCLUDE_PREFIX`.
+- When running preprocessing and projection as separate commands, give both
+  processes the same `BARK_INCLUDE_PREFIX`; the wrapper does this automatically.
 - The shell wrapper supports overriding the Pkl executable through `PKL`.
 
 ## Pkl behavior that affected the design
