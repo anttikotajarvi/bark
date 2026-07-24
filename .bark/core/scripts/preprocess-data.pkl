@@ -6,10 +6,10 @@ import "../sys/constants.pkl" as CFG
 import "../sys/preprocess/ManifestIndex.pkl" as ManifestIndex
 import "../sys/project/DirectoryShape.pkl" as DirectoryShape
 
-/// Path from .bark/core/scripts back to the data repo root.
+// Path from .bark/core/scripts back to the data repo root.
 local const ROOT_PATH = "../../../"
 
-/// Scan manifest files under the data repo root; ManifestIndex excludes .bark.
+// Scan manifest files under the data repo root; ManifestIndex excludes .bark.
 local allManifestImports = import*("../../../**.manifest.pkl")
 
 manifestIndex = ManifestIndex.build(

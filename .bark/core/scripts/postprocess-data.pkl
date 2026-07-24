@@ -4,8 +4,14 @@ import "../generated/projection.pkl" as Projection
 import "../generated/projection-meta.pkl" as Metadata
 import "../sys/postprocess/ManifestCoherence.pkl" as ManifestCoherence
 
-local _manifestCoherence =
+local manifestCoherence =
   ManifestCoherence.check(Projection, Metadata.manifestIndex)
 
-projection = Projection
+// Local properties are lazy, so make the rendered projection force the check.
+projection =
+  if (manifestCoherence)
+    Projection
+  else
+    throw("Manifest coherence check failed")
+
 metadata = Metadata

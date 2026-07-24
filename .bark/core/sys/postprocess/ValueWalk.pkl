@@ -5,9 +5,6 @@ class ValueRef {
   value: Any
 }
 
-function childPath(path: String, key: String): String =
-  if (path == "") key else "\(path).\(key)"
-
 function isObjectLike(value: Any): Boolean =
   !(value is Map) &&
   !(value is Mapping) &&
@@ -55,6 +52,10 @@ function walk(value: Any, path: String): List<ValueRef> =
       }.toList()
     else
       own
+
+// Path strings are diagnostic output owned by this traversal.
+local function childPath(path: String, key: String): String =
+  if (path == "") key else "\(path).\(key)"
 
 local function isLeafClass(name: String): Boolean =
   name == "Null" ||

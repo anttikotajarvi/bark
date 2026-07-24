@@ -1,6 +1,6 @@
 extends "pkl:Command"
 
-graph = import("../../registry.pkl").graph
+local graph = import("../../registry.pkl").graph
 
 options: Options
 

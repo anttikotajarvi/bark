@@ -8,19 +8,6 @@ class ScopedPath {
   localPath: String
 }
 
-function normalizePrefix(prefix: String): String =
-  let (stripped = stripDotSlash(prefix.trim()))
-    if (stripped == "" || stripped == ".")
-      ""
-    else if (stripped.startsWith("/"))
-      throw("\(CFG.INCLUDE_PREFIX_ENV_VAR) must be relative to the data repo root: \(prefix)")
-    else if (stripped.endsWith("/"))
-      stripped
-    else
-      "\(stripped)/"
-
-local INCLUDE_PREFIX = normalizePrefix(CFG.INCLUDE_PREFIX)
-
 function scopedPath(
   rootPath: String,
   importPath: String
@@ -71,6 +58,21 @@ function keepDirectoryChild(
 ): Boolean =
   name != CFG.BARK_DIRNAME &&
     !(INCLUDE_PREFIX == "" && path.isEmpty && name == CFG.TEST_FIXTURES_DIR)
+
+// Prefix normalization is owned configuration policy. It is deliberately not
+// an amendment hook for the physical/logical path operations above.
+local INCLUDE_PREFIX = normalizePrefix(CFG.INCLUDE_PREFIX)
+
+local function normalizePrefix(prefix: String): String =
+  let (stripped = stripDotSlash(prefix.trim()))
+    if (stripped == "" || stripped == ".")
+      ""
+    else if (stripped.startsWith("/"))
+      throw("\(CFG.INCLUDE_PREFIX_ENV_VAR) must be relative to the data repo root: \(prefix)")
+    else if (stripped.endsWith("/"))
+      stripped
+    else
+      "\(stripped)/"
 
 local function inScope(path: String): Boolean =
   if (INCLUDE_PREFIX == "")

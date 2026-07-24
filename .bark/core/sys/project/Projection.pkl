@@ -4,14 +4,27 @@ import "../GraphModel.pkl" as Sys
 import "../render/Expr.pkl" as Expr
 import "EntryTree.pkl" as EntryTree
 
-const PROJECTION_SCHEMA_PATH = "ProjectionSchema.pkl"
+function render(
+  tree: Mapping,
+  graph: Sys.AnyNode,
+  pathPrefix: String
+): String =
+  """
+  extends "\(PROJECTION_SCHEMA_PATH)"
 
-class CodeRender {
+  \(renderMembers(tree, graph, List(), pathPrefix).expr)
+  """.trim()
+
+// The helpers below produce partial syntax and share the CodeRender invariant;
+// only render returns a complete projection module.
+local const PROJECTION_SCHEMA_PATH = "ProjectionSchema.pkl"
+
+local class CodeRender {
   expr: String = ""
 }
 
 // Unlike Expr.indent, retain indentation already present in nested renders.
-function indentBlock(text: String, spaces: Int): String =
+local function indentBlock(text: String, spaces: Int): String =
   let (prefix = " ".repeat(spaces))
     text
       .trim()
@@ -22,20 +35,20 @@ function indentBlock(text: String, spaces: Int): String =
       )
       .join("\n")
 
-function getNode(graph: Sys.AnyNode, path: List<String>): Sys.AnyNode? =
+local function getNode(graph: Sys.AnyNode, path: List<String>): Sys.AnyNode? =
   getChildNode(graph, path)
 
-function importEntry(entry: EntryTree.Entry, pathPrefix: String): String =
+local function importEntry(entry: EntryTree.Entry, pathPrefix: String): String =
   "import(\"\(pathPrefix)\(entry.importPath)\")"
 
-function usesElements(graph: Sys.AnyNode, path: List<String>): Boolean =
+local function usesElements(graph: Sys.AnyNode, path: List<String>): Boolean =
   let (node = getNode(graph, path))
     node is Sys.TableNode || node is Sys.CollectionNode
 
-function isIndex(graph: Sys.AnyNode, path: List<String>): Boolean =
+local function isIndex(graph: Sys.AnyNode, path: List<String>): Boolean =
   getNode(graph, path) is Sys.IndexNode
 
-function renderObject(
+local function renderObject(
   tree: Mapping,
   graph: Sys.AnyNode,
   path: List<String>,
@@ -55,7 +68,7 @@ function renderObject(
           """.trim()
     }
 
-function renderValue(
+local function renderValue(
   node: Any,
   graph: Sys.AnyNode,
   path: List<String>,
@@ -76,7 +89,7 @@ function renderValue(
   else
     throw("Unrecognized entry tree node at '\(path.join("/"))'")
 
-function renderMember(
+local function renderMember(
   name: String,
   node: Any,
   graph: Sys.AnyNode,
@@ -114,7 +127,7 @@ function renderMember(
           expr = "\(Expr.propertyName(name)) = \(value)"
         }
 
-function renderMembers(
+local function renderMembers(
   tree: Mapping,
   graph: Sys.AnyNode,
   path: List<String>,
@@ -129,17 +142,6 @@ function renderMembers(
       if (acc.expr == "") member.expr
       else "\(acc.expr)\n\(member.expr)"
   })
-
-function render(
-  tree: Mapping,
-  graph: Sys.AnyNode,
-  pathPrefix: String
-): String =
-  """
-  extends "\(PROJECTION_SCHEMA_PATH)"
-
-  \(renderMembers(tree, graph, List(), pathPrefix).expr)
-  """.trim()
 
 local function getChildNode(
   curNode: Sys.AnyNode,

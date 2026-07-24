@@ -7,22 +7,15 @@ typealias NodeName = String
 class Entry {
   localPath: String
   importPath: String = localPath
-  hidden els = localPath.split("/")
-  anchors = els.dropLast(1)
-  filename = els.last
-  name = filename.replaceLast(CFG.PKL_EXTENSION, "")
+  local els = localPath.split("/")
+  fixed anchors: List<String> = els.dropLast(1)
+  local filename = els.last
+  fixed name: String = filename.replaceLast(CFG.PKL_EXTENSION, "")
 }
 
 // Pkl type aliases cannot be recursive, so the functions below own the
 // invariant that values in an ENode mapping are themselves ENodes.
 typealias ENode = Entry | Mapping<NodeName, Any>
-
-function consumeEntry(
-  entry: Entry,
-  curTree: ENode,
-  curPath: List<String>
-): ENode =
-  consumeChild(entry, curTree, curPath) ?? curTree
 
 function seed(paths: List<List<String>>): Mapping =
   paths.fold(
@@ -33,11 +26,16 @@ function seed(paths: List<List<String>>): Mapping =
 function addEntries(tree: ENode, entries: List<Entry>): ENode =
   entries.fold(
     tree,
-    (result, entry) -> consumeEntry(entry, result, entry.anchors)
+    (result, entry) -> addEntry(result, entry)
   )
 
 function build(entries: List<Entry>): ENode =
   addEntries(new Mapping {}, entries)
+
+// Keep the traversal cursor internal so insertion always starts at the
+// anchors derived from the entry's local path.
+local function addEntry(tree: ENode, entry: Entry): ENode =
+  consumeChild(entry, tree, entry.anchors) ?? tree
 
 // Returns null when the entry cannot be inserted. This lets every caller in
 // the recursion reject the change and keep its original node unchanged.

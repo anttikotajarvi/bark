@@ -4,7 +4,33 @@ import "../constants.pkl" as CFG
 import "../Errors.pkl" as Errors
 import "../PathScope.pkl" as PathScope
 
-class ManifestRecord {
+class ManifestIndexEntry {
+  manifestPath: String
+  targetPath: String
+  target: String
+  isDir: Boolean
+}
+
+typealias ManifestIndex = Mapping<String, ManifestIndexEntry>
+typealias TargetExists = (String) -> Boolean
+
+/// Derives the target name dictated by a manifest sidecar's filename.
+const function expectedTargetName(localPath: String): String =
+  localPath
+    .split("/")
+    .last
+    .replaceLast(CFG.MANIFEST_SUFFIX, "")
+
+function build(
+  rootPath: String,
+  imports: Mapping<String, Any>,
+  targetExists: TargetExists
+): ManifestIndex =
+  recordsToIndex(validateRecords(targetExists, buildRecords(rootPath, imports)))
+
+// Transient records and validation stages are owned by build. They must not be
+// exposed as independently overridable ways to construct an unchecked index.
+local class ManifestRecord {
   importPath: String
   localPath: String
   physicalLocalPath: String
@@ -14,39 +40,23 @@ class ManifestRecord {
   physicalTargetPath: String
 }
 
-class ManifestIndexEntry {
-  manifestPath: String
-  targetPath: String
-  target: String
-  isDir: Boolean
-}
-
-class ManifestImport {
+local class ManifestImport {
   importPath: String
   localPath: String
   physicalLocalPath: String
 }
 
-typealias ManifestIndex = Mapping<String, ManifestIndexEntry>
-typealias TargetExists = (String) -> Boolean
-
-function expectedTargetName(localPath: String): String =
-  localPath
-    .split("/")
-    .last
-    .replaceLast(CFG.MANIFEST_SUFFIX, "")
-
-function parentPath(localPath: String): String =
+local function parentPath(localPath: String): String =
   localPath
     .split("/")
     .dropLast(1)
     .join("/")
 
-function targetPath(localPath: String, target: String): String =
+local function targetPath(localPath: String, target: String): String =
   let (parent = parentPath(localPath))
     if (parent == "") target else "\(parent)/\(target)"
 
-function buildRecords(
+local function buildRecords(
   rootPath: String,
   imports: Mapping<String, Any>
 ): List<ManifestRecord> =
@@ -76,7 +86,7 @@ function buildRecords(
         }
     }.toList()
 
-function validateSidecar(rec: ManifestRecord): ManifestRecord =
+local function validateSidecar(rec: ManifestRecord): ManifestRecord =
   if (rec.manifest.target != rec.expectedTarget)
     Errors.manifestSidecarMismatch(
       rec.localPath,
@@ -86,26 +96,26 @@ function validateSidecar(rec: ManifestRecord): ManifestRecord =
   else
     rec
 
-function validateTargetExists(targetExists: TargetExists, rec: ManifestRecord): ManifestRecord =
+local function validateTargetExists(targetExists: TargetExists, rec: ManifestRecord): ManifestRecord =
   if (!targetExists.apply(rec.physicalTargetPath))
     Errors.manifestTargetMissing(rec.localPath, rec.targetPath)
   else
     rec
 
-function duplicateIds(records: List<ManifestRecord>): List<String> =
+local function duplicateIds(records: List<ManifestRecord>): List<String> =
   records
     .map((rec) -> rec.manifest.id)
     .filter((id) -> records.filter((rec) -> rec.manifest.id == id).length > 1)
     .distinct
 
-function validateUniqueIds(records: List<ManifestRecord>): List<ManifestRecord> =
+local function validateUniqueIds(records: List<ManifestRecord>): List<ManifestRecord> =
   let (dupes = duplicateIds(records))
     if (!dupes.isEmpty)
       Errors.duplicateManifestIds(dupes)
     else
       records
 
-function validateRecords(
+local function validateRecords(
   targetExists: TargetExists,
   records: List<ManifestRecord>
 ): List<ManifestRecord> =
@@ -115,7 +125,7 @@ function validateRecords(
       .map((rec) -> validateTargetExists(targetExists, rec))
   )
 
-function recordsToIndex(records: List<ManifestRecord>): ManifestIndex =
+local function recordsToIndex(records: List<ManifestRecord>): ManifestIndex =
   new Mapping<String, ManifestIndexEntry> {
     for (rec in records) {
       [rec.manifest.id] = new ManifestIndexEntry {
@@ -126,10 +136,3 @@ function recordsToIndex(records: List<ManifestRecord>): ManifestIndex =
       }
     }
   }
-
-function build(
-  rootPath: String,
-  imports: Mapping<String, Any>,
-  targetExists: TargetExists
-): ManifestIndex =
-  recordsToIndex(validateRecords(targetExists, buildRecords(rootPath, imports)))

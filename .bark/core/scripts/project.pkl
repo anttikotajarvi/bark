@@ -10,10 +10,10 @@ import "../sys/project/EntryTree.pkl" as EntryTree
 import "../sys/project/Projection.pkl" as Projection
 
 
-/// Path from .bark/core/scripts back to the data repo root.
-const ROOT_PATH = "../../../"
+// Path from .bark/core/scripts back to the data repo root.
+local const ROOT_PATH = "../../../"
 
-/// Scan Pkl entries under the data repo root; keepImportPath excludes .bark.
+// Scan Pkl entries under the data repo root; keepImportPath excludes .bark.
 local allImports = import*("../../../**.pkl")
 
 local entries = new Listing<EntryTree.Entry> {
@@ -57,7 +57,7 @@ local generatedHeader =
   //   \(CFG.INCLUDE_PREFIX_ENV_VAR)=\(CFG.INCLUDE_PREFIX)
   """.trim()
 
-rendered =
+local rendered =
   """
   \(generatedHeader)
 

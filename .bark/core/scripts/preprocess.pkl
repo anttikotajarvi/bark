@@ -5,7 +5,7 @@ extends "pkl:Command"
 import "preprocess-data.pkl" as Data
 import "../sys/constants.pkl" as CFG
 
-const PREPROCESS_SCHEMA_PATH = "modulepath:/.bark/core/sys/preprocess/PreprocessData.pkl"
+local const PREPROCESS_SCHEMA_PATH = "modulepath:/.bark/core/sys/preprocess/PreprocessData.pkl"
 
 options: Options
 
@@ -29,7 +29,7 @@ local generatedHeader =
   //   \(CFG.INCLUDE_PREFIX_ENV_VAR)=\(CFG.INCLUDE_PREFIX)
   """.trim()
 
-rendered =
+local rendered =
   """
   \(generatedHeader)
 

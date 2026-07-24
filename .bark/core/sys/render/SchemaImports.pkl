@@ -4,23 +4,30 @@ import "../GraphModel.pkl" as Sys
 import "../Util.pkl" as Util
 import "Expr.pkl" as Expr
 
-typealias SchemaID = String
-
-/// Stable id from schema.
-function schemaId(schema: Sys.Schema): SchemaID =
-  schema.resource.uri
-
-function moduleNameFromSchema(schema: Sys.Schema): String =
+/// Returns the import alias that generated type references must also use.
+const function moduleNameFromSchema(schema: Sys.Schema): String =
   Util.stem(schema.path)
 
-function collectSchemaListFromNodes(nodes: Mapping<String, Sys.AnyNode>): List<Sys.Schema> =
+function renderImports(node: Sys.AnyNode, pathPrefix: String): String =
+  collectSchemas(node).toMap().values.map((schema) ->
+    Expr.importAs("\(pathPrefix)\(schema.path)", moduleNameFromSchema(schema))
+  ).join("\n")
+
+// Schema discovery and deduplication are implementation policy for the import
+// renderer, rather than a general graph-query API.
+local typealias SchemaID = String
+
+local function schemaId(schema: Sys.Schema): SchemaID =
+  schema.resource.uri
+
+local function collectSchemaListFromNodes(nodes: Mapping<String, Sys.AnyNode>): List<Sys.Schema> =
   new Listing<List<Sys.Schema>> {
     for (_, node in nodes) {
       collectSchemaList(node)
     }
   }.fold(List(), (acc, x) -> acc + x)
 
-function collectSchemaList(node: Sys.AnyNode): List<Sys.Schema> =
+local function collectSchemaList(node: Sys.AnyNode): List<Sys.Schema> =
   if (node is Sys.TableNode)
     List(node._schema)
 
@@ -37,7 +44,7 @@ function collectSchemaList(node: Sys.AnyNode): List<Sys.Schema> =
   else
     throw("Unrecognized node type: '\(node.type)'")
 
-function dedupeSchemas(schemas: List<Sys.Schema>): List<Sys.Schema> =
+local function dedupeSchemas(schemas: List<Sys.Schema>): List<Sys.Schema> =
   schemas.fold(List(), (acc, schema) ->
     if (acc.any((x) -> schemaId(x) == schemaId(schema)))
       acc
@@ -45,14 +52,9 @@ function dedupeSchemas(schemas: List<Sys.Schema>): List<Sys.Schema> =
       acc + List(schema)
   )
 
-function collectSchemas(node: Sys.AnyNode): Mapping<SchemaID, Sys.Schema> =
+local function collectSchemas(node: Sys.AnyNode): Mapping<SchemaID, Sys.Schema> =
   new Mapping<SchemaID, Sys.Schema> {
     for (schema in dedupeSchemas(collectSchemaList(node))) {
       [schemaId(schema)] = schema
     }
   }
-
-function renderImports(node: Sys.AnyNode, pathPrefix: String): String =
-  collectSchemas(node).toMap().values.map((s) ->
-    Expr.importAs("\(pathPrefix)\(s.path)", moduleNameFromSchema(s))
-  ).join("\n")
