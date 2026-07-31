@@ -26,6 +26,15 @@ For development throughput tests, run:
 ./.dev/test basic
 ```
 
+To generate and inspect the projection artifacts for a single fixture, run:
+
+```sh
+./.dev/full-fixture basic
+```
+
+This runs the complete projection pipeline and leaves the selected fixture's
+artifacts under `.bark/core/generated/`.
+
 Each fixture is a small dev-only package under `.test-fixtures/<name>/`:
 
 ```text
