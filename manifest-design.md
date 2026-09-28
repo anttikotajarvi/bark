@@ -1059,17 +1059,15 @@ No global marker scan should be implemented for v0.
 
 ### Explicit decisions
 
-Some manifest errors should be thrown directly in preprocessing.
+Known Bark validation errors are collected during preprocessing rather than thrown.
 
-This is appropriate when delaying the error would cause a confusing projection failure.
+Detailed findings live in `metadata.preprocessErrors`. Postprocess converts any non-empty preprocessing error list into one aggregate `PREPROCESS_FAILED` result error, while its own coherence checks add their errors directly to `result.errors`. The aggregate error lists the named preprocessing errors and repeats their human-readable messages for result-only terminal output, without copying the structured error entries into the result list.
 
-Projection metadata may later be used to hoist coherence state into Pkl validation.
-
-This is an implementation strategy, not a semantic requirement.
+Natural Pkl syntax, import, type, schema, and internal-invariant failures continue to fail at their normal evaluation point with full Pkl diagnostics.
 
 ### Implications
 
-The system can use both direct preprocessing errors and generated metadata validation.
+The final postprocess envelope contains `projection`, `metadata`, and `result`. `result.errors.isEmpty` is the validity decision.
 
 The semantic rule remains simple:
 
@@ -1081,50 +1079,45 @@ A manifest is coherent if:
   its target kind matches isDir
 ```
 
-Strict/non-strict mode should not be designed specifically for manifests yet.
+Without force, postprocess does not publish the full envelope when result errors are present. Force permits publication but does not remove or downgrade any errors.
 
 ### Examples
 
-Early preprocessing error:
-
-```txt
-receipt.pdf.manifest.pkl points to missing receipt.pdf
-```
-
-Potential future metadata shape:
+Detailed preprocessing metadata:
 
 ```pkl
-manifestCoherence {
-  ok = true
-  errors = new Listing {}
+preprocessErrors = List(
+  new Errors.Error {
+    code = "MANIFEST_TARGET_MISSING"
+    message = "..."
+  }
+)
+```
+
+Final postprocess result:
+
+```pkl
+result {
+  errors = List(
+    new {
+      code = "PREPROCESS_FAILED"
+      message = "Preprocess failed with 1 error:\n\n1. MANIFEST_TARGET_MISSING\n   Manifest target missing.\n..."
+    }
+  )
 }
-```
-
-Strict mode could require:
-
-```pkl
-manifestCoherence.ok: true
-```
-
-Non-strict mode could expose:
-
-```pkl
-manifestCoherence.errors
 ```
 
 ### Undecided details
 
-Strict/non-strict validation mode is undecided.
-
-The exact mechanism for hoisting preprocessing findings into Pkl validation is undecided.
+How a future procedure composer presents structured errors to CLI users is outside the Pkl system contract.
 
 ### Implementation directions
 
-Use preprocessing errors where they produce clearer diagnostics.
+Keep detailed preprocessing findings only in metadata and avoid copying them into the final result.
 
-Keep metadata-coherence as an available implementation direction.
+Use a single aggregate `PREPROCESS_FAILED` result error as the postprocess gate.
 
-Do not make strict/non-strict mode a v0 manifest-specific feature.
+Reserve throws for natural Pkl failures rather than Bark validation findings.
 
 ---
 
@@ -1248,7 +1241,7 @@ Make a note in the document that manifest inclusion may later be covered by gene
 
 ### Explicit decisions
 
-The following are hard errors:
+The following make the Bark result invalid; representable findings are structured validation errors rather than Pkl exceptions:
 
 ```txt
 1. target file or directory missing
@@ -1406,10 +1399,9 @@ The remaining undecided details are:
 1. final Bark manifest marker field name and value
 2. future Manifest generic/type-argument direction after v0 concrete schema
 3. final projection metadata file names
-4. final projection metadata validation strategy
-5. final Resource object shape
-6. final generic glob/import table shorthand
-7. exact diagnostics formatting
+4. final Resource object shape
+5. final generic glob/import table shorthand
+6. exact diagnostics formatting
 ```
 
 ### Implementation directions
@@ -1423,5 +1415,5 @@ Implement the manifest design in this order:
 4. Generate manifestIndex metadata.
 5. Project manifests according to normal projection context.
 6. Resolve resources through manifest.id and manifestIndex.
-7. Revisit metadata validation and strict/non-strict coherence later.
+7. Carry preprocessing findings through metadata and enforce them through the postprocess result.
 ```

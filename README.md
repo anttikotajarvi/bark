@@ -7,11 +7,12 @@ This is a working decision log, not polished user documentation. It records the 
 1. Read the graph from `repo/.bark/registry.pkl`.
 2. Render `ProjectionSchema.pkl` from the graph.
 3. Collect static graph paths and expand observed collection children.
-4. Check that those directories exist in the filesystem.
+4. Check which required directories are missing and record those findings in projection metadata.
 5. Seed an entry tree with the declared directories, including empty ones.
 6. Add imported user entries and collapse directories containing `index.pkl`.
 7. Render `projection.pkl`, using the graph to distinguish properties from mapping elements.
 8. Evaluate `projection.pkl` against `ProjectionSchema.pkl`.
+9. Run postprocess coherence checks and produce the final projection, metadata, and result envelope.
 
 From `repo/`, the whole flow is:
 
@@ -66,8 +67,10 @@ The guiding rule is: generate Pkl whenever the observed state can be represented
 Failures fall into three categories:
 
 - **Deferred Pkl validation.** Missing indexes, wrong collection entry types, invalid imported values, and schema mismatches are represented in `projection.pkl` and rejected when it is evaluated against `ProjectionSchema.pkl`.
-- **Pre-generation directory-shape errors.** A graph-required filesystem directory that does not exist fails before seeding or rendering. This is the expected user-facing Bark error during generation.
-- **Internal invariant and dependency errors.** Unknown graph/tree node types and missing Bark renderer dependencies indicate implementation or installation failures, not invalid user data.
+- **Bark validation errors.** Missing required directories, manifest sidecar mismatches, missing manifest targets, and duplicate manifest ids are collected under `metadata.preprocessErrors`. Postprocess coherence checks summarize them and add their own findings to `result.errors` without throwing a Pkl error. The aggregate preprocessing error repeats the human-readable detail messages so result-only terminal output remains useful.
+- **Natural Pkl failures.** Malformed Pkl, invalid imports or amendments, registry/schema evaluation failures, unknown graph/tree nodes, and missing Bark renderer dependencies fail at their normal evaluation point with the complete Pkl diagnostic.
+
+The postprocess artifact has three top-level values: `projection`, `metadata`, and `result`. An empty `result.errors` is the canonical successful result. When errors are present, postprocess returns the structured result but does not write the requested artifact unless `--force` is set. Forced output retains every error; force changes publication policy, not validity. Suppressing a write does not delete an artifact already present at the requested path, so procedure composition must use a fresh or staged destination.
 
 An unresolved `IndexNode` demonstrates the deferred approach. Its seeded mapping is rendered as:
 
@@ -77,7 +80,7 @@ new Dynamic {}
 
 This is an intentional placeholder: it keeps the generated Pkl valid as source while guaranteeing that evaluation fails against the indexed schema type.
 
-Directory-shape validation is the deliberate exception to deferring errors. Seeding alone cannot preserve whether a path existed: a missing `products/` and an existing empty `products/` would both become `{}`. Mapping defaults can then make both appear valid. Static children below an index boundary also disappear from projection and cannot be checked by the generated schema. Filesystem existence must therefore be checked before those paths are seeded.
+Directory-shape detection is deliberately hoisted. Seeding alone cannot preserve whether a path existed: a missing `products/` and an existing empty `products/` would both become `{}`. Mapping defaults can then make both appear valid. Static children below an index boundary also disappear from projection and cannot be checked by the generated schema. Filesystem existence is therefore checked before those paths are seeded, while the resulting validation errors are carried in metadata for postprocess.
 
 In this context, an **invalid directory shape** means a missing graph-required filesystem path, including static descendants beneath observed collection entries. It does not mean an empty index, a wrong entry type, or another state that can be represented and deferred to Pkl validation.
 
@@ -86,7 +89,7 @@ In this context, an **invalid directory shape** means a missing graph-required f
 - The graph is additive. It declares the minimum structure known to exist in the projection; it does not describe everything that is allowed to exist.
 - Statically declared paths must exist as directories in the filesystem.
 - A declared directory may be empty and must still appear in the projection.
-- A missing declared directory is an error before projection code is generated.
+- A missing declared directory is recorded as a preprocessing error before projection code is generated.
 - Schema stubs such as `schema.pkl` are not used as evidence that a directory exists. Directory checks operate on the directory path itself.
 - `DirNode` declares named child properties.
 - `TableNode` projects ordinary files as mapping elements keyed by filename stem.
@@ -100,7 +103,7 @@ Example: if `products/` exists but has no product entries, the generated project
 `products` {}
 ```
 
-If `products/` itself is missing, generation fails with the shared missing-directory error.
+If `products/` itself is missing, metadata contains the shared missing-directory error and the final result contains one aggregate `PREPROCESS_FAILED` error.
 
 ## Loose structure
 
@@ -136,7 +139,7 @@ If `products/` itself is missing, generation fails with the shared missing-direc
 - Collection expansion uses a caller-provided directory-children function, keeping filesystem enumeration outside the reusable validator.
 - The Pkl-only adapter reads names from directory resources and is less strict about distinguishing files from directories; a native CLI can provide true directory-only children through the same API.
 - A future custom CLI can provide a stricter native filesystem implementation without changing graph traversal.
-- User-facing missing-directory failures are created through `Errors.missingRequiredDirectories`, with optional contextual information.
+- User-facing missing-directory errors are created through `Errors.missingRequiredDirectories`, with optional contextual information, and carried as data rather than thrown.
 
 ## Projection code generation
 
@@ -189,6 +192,8 @@ The wrapper writes:
 ```text
 repo/.bark/core/generated/ProjectionSchema.pkl
 repo/.bark/core/generated/projection.pkl
+repo/.bark/core/generated/projection-meta.pkl
+repo/.bark/core/generated/postprocess-output.pcf
 ```
 
 These are generated artifacts. The source of truth is the graph, the user files, and the generator implementation.
