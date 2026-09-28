@@ -1,7 +1,8 @@
 amends "pkl:test"
 
-import "modulepath:/.bark/core/generated/projection.pkl" as Projection
 import "modulepath:/.bark/core/generated/projection-meta.pkl" as Metadata
+import "modulepath:/.bark/core/generated/projection.pkl" as Projection
+import "modulepath:/.bark/core/scripts/postprocess-data.pkl" as Postprocess
 
 local exitCode = (read?("prop:bark.testExitCode") ?? "1") as String
 local stdoutPath = (read?("prop:bark.testStdoutPath") ?? "") as String
@@ -26,5 +27,10 @@ facts {
   ["fixtures are excluded from default run"] {
     Metadata.manifestIndex.containsKey(defaultReceiptId)
     !Metadata.manifestIndex.containsKey(fixtureReceiptId)
+  }
+
+  ["preprocess and postprocess validation succeed"] {
+    Metadata.preprocessErrors.isEmpty
+    Postprocess.result.errors.isEmpty
   }
 }

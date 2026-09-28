@@ -1,0 +1,12 @@
+module bark.postprocess.PreprocessCoherence
+
+import "../Errors.pkl" as Errors
+
+/// Converts detailed preprocessing metadata into one final coherence failure.
+/// Structured source errors remain exclusively at metadata.preprocessErrors;
+/// their messages are repeated in the aggregate error for terminal output.
+function check(preprocessErrors: List<Errors.Error>): List<Errors.Error> =
+  if (preprocessErrors.isEmpty)
+    List()
+  else
+    List(Errors.preprocessFailed(preprocessErrors))

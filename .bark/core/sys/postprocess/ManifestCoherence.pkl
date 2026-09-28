@@ -21,20 +21,16 @@ function findManifests(value: Any, path: String): List<ManifestRef> =
 
 function missingManifestRefs(
   projection: Any,
-  manifestIndex: ManifestIndex.ManifestIndex
+  manifestIndex: ManifestIndex.ManifestIndex,
 ): List<ManifestRef> =
-  findManifests(projection, "")
-    .filter((ref) -> !manifestIndex.containsKey(ref.id))
+  findManifests(projection, "").filter((ref) -> !manifestIndex.containsKey(ref.id))
 
-function check(
-  projection: Any,
-  manifestIndex: ManifestIndex.ManifestIndex
-): Boolean =
+function check(projection: Any, manifestIndex: ManifestIndex.ManifestIndex): List<Errors.Error> =
   let (missing = missingManifestRefs(projection, manifestIndex))
-    if (!missing.isEmpty)
-      Errors.projectedManifestIdsMissing(missing)
+    if (missing.isEmpty)
+      List()
     else
-      true
+      List(Errors.projectedManifestIdsMissing(missing))
 
 local function manifestRef(ref: ValueWalk.ValueRef): List<ManifestRef> =
   if (SpecialValues.isManifest(ref.value))

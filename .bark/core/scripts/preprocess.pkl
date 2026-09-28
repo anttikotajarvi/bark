@@ -2,10 +2,12 @@ module bark.scripts.Preprocess
 
 extends "pkl:Command"
 
-import "preprocess-data.pkl" as Data
 import "../sys/constants.pkl" as CFG
+import "../sys/Errors.pkl" as Errors
+import "preprocess-data.pkl" as Data
 
 local const PREPROCESS_SCHEMA_PATH = "modulepath:/.bark/core/sys/preprocess/PreprocessData.pkl"
+local const ERRORS_PATH = "modulepath:/.bark/core/sys/Errors.pkl"
 
 options: Options
 
@@ -19,7 +21,37 @@ class Options {
   output: String? = null
 }
 
-local renderedBody = output.renderer.renderDocument(Data)
+// PcfRenderer intentionally omits class names. That is normally desirable,
+// but `List(new { ... })` cannot recover its element parent when the rendered
+// document is used as generated Pkl source. Render error constructors with an
+// explicit parent so error-bearing metadata remains evaluable.
+local renderedDataBody =
+  output.renderer.renderDocument(new Dynamic {
+    manifestIndex = Data.manifestIndex
+    directoryPaths = Data.directoryPaths
+  })
+
+local renderedErrors =
+  if (Data.preprocessErrors.isEmpty)
+    "preprocessErrors = List()"
+  else
+    let (items = Data.preprocessErrors.map((error) -> renderError(error)).join(",\n"))
+      "preprocessErrors = List(\n\(indent(items))\n)"
+
+local renderedBody =
+  """
+  \(renderedDataBody.trim())
+  \(renderedErrors)
+  """.trim()
+
+local function renderError(error: Errors.Error): String =
+  """
+  new Errors.Error {
+  \(indent(output.renderer.renderDocument(error).trim()))
+  }
+  """.trim()
+
+local function indent(text: String): String = "  \(text.replaceAll("\n", "\n  "))"
 
 local generatedHeader =
   """
@@ -34,6 +66,8 @@ local rendered =
   \(generatedHeader)
 
   amends "\(PREPROCESS_SCHEMA_PATH)"
+
+  import "\(ERRORS_PATH)" as Errors
 
   \(renderedBody)
   """.trim()

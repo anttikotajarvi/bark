@@ -14,19 +14,33 @@ class ManifestIndexEntry {
 typealias ManifestIndex = Mapping<String, ManifestIndexEntry>
 typealias TargetExists = (String) -> Boolean
 
+class BuildResult {
+  index: ManifestIndex
+  errors: List<Errors.Error>
+}
+
 /// Derives the target name dictated by a manifest sidecar's filename.
 const function expectedTargetName(localPath: String): String =
-  localPath
-    .split("/")
-    .last
-    .replaceLast(CFG.MANIFEST_SUFFIX, "")
+  localPath.split("/").last.replaceLast(CFG.MANIFEST_SUFFIX, "")
 
 function build(
   rootPath: String,
   imports: Mapping<String, Any>,
-  targetExists: TargetExists
-): ManifestIndex =
-  recordsToIndex(validateRecords(targetExists, buildRecords(rootPath, imports)))
+  targetExists: TargetExists,
+): BuildResult =
+  let (records = buildRecords(rootPath, imports))
+  let (dupes = duplicateIds(records))
+    new BuildResult {
+      // A duplicate id has no unambiguous index entry. Excluding every record
+      // with that id also prevents Mapping construction from failing naturally.
+      index = recordsToIndex(records.filter((rec) -> !dupes.contains(rec.manifest.id)))
+      errors =
+        recordErrors(targetExists, records)
+          + if (dupes.isEmpty)
+            List()
+          else
+            List(Errors.duplicateManifestIds(dupes))
+    }
 
 // Transient records and validation stages are owned by build. They must not be
 // exposed as independently overridable ways to construct an unchecked index.
@@ -46,31 +60,32 @@ local class ManifestImport {
   physicalLocalPath: String
 }
 
-local function parentPath(localPath: String): String =
-  localPath
-    .split("/")
-    .dropLast(1)
-    .join("/")
+local function parentPath(localPath: String): String = localPath.split("/").dropLast(1).join("/")
 
 local function targetPath(localPath: String, target: String): String =
   let (parent = parentPath(localPath))
     if (parent == "") target else "\(parent)/\(target)"
 
-local function buildRecords(
-  rootPath: String,
-  imports: Mapping<String, Any>
-): List<ManifestRecord> =
-  let (manifestImports = new Listing<ManifestImport> {
-    for (path in imports.keys) {
-      for (scoped in PathScope.scopedPaths(rootPath, path).filter((p) -> PathScope.keepUserLocalPath(p.localPath))) {
-        new ManifestImport {
-          importPath = path
-          localPath = scoped.localPath
-          physicalLocalPath = scoped.physicalLocalPath
+local function buildRecords(rootPath: String, imports: Mapping<String, Any>): List<ManifestRecord> =
+  let (
+    manifestImports =
+      new Listing<ManifestImport> {
+        for (path in imports.keys) {
+          for (
+            scoped in
+              PathScope
+                .scopedPaths(rootPath, path)
+                .filter((p) -> PathScope.keepUserLocalPath(p.localPath))
+          ) {
+            new ManifestImport {
+              importPath = path
+              localPath = scoped.localPath
+              physicalLocalPath = scoped.physicalLocalPath
+            }
+          }
         }
-      }
-    }
-  }.toList())
+      }.toList()
+  )
     new Listing<ManifestRecord> {
       for (entry in manifestImports) {
         let (expected = expectedTargetName(entry.localPath))
@@ -83,24 +98,26 @@ local function buildRecords(
             targetPath = targetPath(entry.localPath, expected)
             physicalTargetPath = targetPath(entry.physicalLocalPath, expected)
           }
-        }
+      }
     }.toList()
 
-local function validateSidecar(rec: ManifestRecord): ManifestRecord =
-  if (rec.manifest.target != rec.expectedTarget)
-    Errors.manifestSidecarMismatch(
-      rec.localPath,
-      rec.expectedTarget,
-      rec.manifest.target
+local function sidecarErrors(rec: ManifestRecord): List<Errors.Error> =
+  if (rec.manifest.target == rec.expectedTarget)
+    List()
+  else
+    List(
+      Errors.manifestSidecarMismatch(
+        rec.localPath,
+        rec.expectedTarget,
+        rec.manifest.target,
+      ),
     )
-  else
-    rec
 
-local function validateTargetExists(targetExists: TargetExists, rec: ManifestRecord): ManifestRecord =
-  if (!targetExists.apply(rec.physicalTargetPath))
-    Errors.manifestTargetMissing(rec.localPath, rec.targetPath)
+local function targetErrors(targetExists: TargetExists, rec: ManifestRecord): List<Errors.Error> =
+  if (targetExists.apply(rec.physicalTargetPath))
+    List()
   else
-    rec
+    List(Errors.manifestTargetMissing(rec.localPath, rec.targetPath))
 
 local function duplicateIds(records: List<ManifestRecord>): List<String> =
   records
@@ -108,31 +125,24 @@ local function duplicateIds(records: List<ManifestRecord>): List<String> =
     .filter((id) -> records.filter((rec) -> rec.manifest.id == id).length > 1)
     .distinct
 
-local function validateUniqueIds(records: List<ManifestRecord>): List<ManifestRecord> =
-  let (dupes = duplicateIds(records))
-    if (!dupes.isEmpty)
-      Errors.duplicateManifestIds(dupes)
-    else
-      records
-
-local function validateRecords(
+local function recordErrors(
   targetExists: TargetExists,
-  records: List<ManifestRecord>
-): List<ManifestRecord> =
-  validateUniqueIds(
-    records
-      .map((rec) -> validateSidecar(rec))
-      .map((rec) -> validateTargetExists(targetExists, rec))
-  )
+  records: List<ManifestRecord>,
+): List<Errors.Error> =
+  records
+    .map((rec) -> sidecarErrors(rec) + targetErrors(targetExists, rec))
+    .fold(List(), (errors, recErrors) -> errors + recErrors)
 
-local function recordsToIndex(records: List<ManifestRecord>): ManifestIndex =
-  new Mapping<String, ManifestIndexEntry> {
-    for (rec in records) {
-      [rec.manifest.id] = new ManifestIndexEntry {
-        manifestPath = rec.localPath
-        targetPath = rec.targetPath
-        target = rec.manifest.target
-        isDir = rec.manifest.isDir
-      }
+local function recordsToIndex(records: List<ManifestRecord>): ManifestIndex = new Mapping<
+  String,
+  ManifestIndexEntry,
+> {
+  for (rec in records) {
+    [rec.manifest.id] = new ManifestIndexEntry {
+      manifestPath = rec.localPath
+      targetPath = rec.targetPath
+      target = rec.manifest.target
+      isDir = rec.manifest.isDir
     }
   }
+}

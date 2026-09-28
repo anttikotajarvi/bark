@@ -1,4 +1,11 @@
 open module bark.postprocess.PostprocessData
 
+import "../Errors.pkl" as Errors
+
+class PostprocessResult {
+  errors: List<Errors.Error>
+}
+
 projection: Any
 metadata: Any
+result: PostprocessResult

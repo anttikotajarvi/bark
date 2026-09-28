@@ -1,8 +1,8 @@
 amends "../sys/preprocess/PreprocessData.pkl"
 
 import "../../registry.pkl" as Registry
-import "../sys/PathScope.pkl" as PathScope
 import "../sys/constants.pkl" as CFG
+import "../sys/PathScope.pkl" as PathScope
 import "../sys/preprocess/ManifestIndex.pkl" as ManifestIndex
 import "../sys/project/DirectoryShape.pkl" as DirectoryShape
 
@@ -12,18 +12,22 @@ local const ROOT_PATH = "../../../"
 // Scan manifest files under the data repo root; ManifestIndex excludes .bark.
 local allManifestImports = import*("../../../**.manifest.pkl")
 
-manifestIndex = ManifestIndex.build(
-  ROOT_PATH,
-  allManifestImports,
-  (path) -> targetExists(path)
-)
+local manifestIndexResult =
+  ManifestIndex.build(ROOT_PATH,
+  allManifestImports, (path) -> targetExists(path)
+  )
 
-directoryPaths = DirectoryShape.requireDirectoryShape(
-  Registry.graph,
-  (path) -> directoryResource(path) != null,
-  (path) -> directoryChildren(path),
-  "project root is '\(ROOT_PATH)' relative to preprocess-data.pkl; \(CFG.INCLUDE_PREFIX_ENV_VAR) is '\(CFG.INCLUDE_PREFIX)'"
-)
+local directoryShapeResult =
+  DirectoryShape.checkDirectoryShape(
+    Registry.graph,
+    (path) -> directoryResource(path) != null,
+    (path) -> directoryChildren(path),
+    "project root is '\(ROOT_PATH)' relative to preprocess-data.pkl; \(CFG.INCLUDE_PREFIX_ENV_VAR) is '\(CFG.INCLUDE_PREFIX)'",
+  )
+
+manifestIndex = manifestIndexResult.index
+directoryPaths = directoryShapeResult.paths
+preprocessErrors = manifestIndexResult.errors + directoryShapeResult.errors
 
 local function directoryResource(path: List<String>): Resource? =
   read?(PathScope.physicalPathFromSegments(ROOT_PATH, path))
@@ -38,5 +42,4 @@ local function directoryChildren(path: List<String>): List<String> =
         .filter((name) -> !name.isBlank)
         .filter((name) -> PathScope.keepDirectoryChild(path, name))
 
-local function targetExists(path: String): Boolean =
-  read?("\(ROOT_PATH)\(path)") != null
+local function targetExists(path: String): Boolean = read?("\(ROOT_PATH)\(path)") != null

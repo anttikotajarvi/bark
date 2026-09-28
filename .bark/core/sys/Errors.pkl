@@ -1,30 +1,37 @@
 module bark.Errors
 
-function missingRequiredDirectories(
-  paths: List<List<String>>,
-  extraInfo: String?
-): nothing =
-  let (pathList = paths
-    .map((path) -> "- \(path.join("/"))")
-    .join("\n"))
-  let (context =
-    if (extraInfo == null || extraInfo.isBlank)
-      ""
-    else
-      "\n\nContext: \(extraInfo)")
-    throw(
-      """
-      Missing required project directories:
-      \(pathList)\(context)
-      """.trim()
-    )
+/// A Bark validation error that can be carried through generated data without
+/// turning it into a Pkl evaluation failure.
+class Error {
+  code: String
+  message: String
+}
+
+function missingRequiredDirectories(paths: List<List<String>>, extraInfo: String?): Error =
+  let (pathList = paths.map((path) -> "- \(path.join("/"))").join("\n"))
+  let (
+    context =
+      if (extraInfo == null || extraInfo.isBlank)
+        ""
+      else
+        "\n\nContext: \(extraInfo)"
+  )
+    new Error {
+      code = "MISSING_REQUIRED_DIRECTORIES"
+      message =
+        """
+        Missing required project directories:
+        \(pathList)\(context)
+        """.trim()
+    }
 
 function manifestSidecarMismatch(
   manifestPath: String,
   expectedTarget: String,
-  actualTarget: String
-): nothing =
-  throw(
+  actualTarget: String,
+): Error = new Error {
+  code = "MANIFEST_SIDECAR_MISMATCH"
+  message =
     """
     Manifest sidecar mismatch.
 
@@ -37,13 +44,11 @@ function manifestSidecarMismatch(
     Actual target:
       \(actualTarget)
     """.trim()
-  )
+}
 
-function manifestTargetMissing(
-  manifestPath: String,
-  targetPath: String
-): nothing =
-  throw(
+function manifestTargetMissing(manifestPath: String, targetPath: String): Error = new Error {
+  code = "MANIFEST_TARGET_MISSING"
+  message =
     """
     Manifest target missing.
 
@@ -53,22 +58,48 @@ function manifestTargetMissing(
     Expected target:
       \(targetPath)
     """.trim()
-  )
+}
 
-function duplicateManifestIds(ids: List<String>): nothing =
-  throw(
+function duplicateManifestIds(ids: List<String>): Error = new Error {
+  code = "DUPLICATE_MANIFEST_IDS"
+  message =
     """
     Duplicate manifest ids:
     \(ids.map((id) -> "- \(id)").join("\n"))
     """.trim()
-  )
+}
 
+function preprocessFailed(preprocessErrors: List<Error>): Error =
+  let (errorCount = preprocessErrors.length)
+  let (
+    details =
+      new Listing<String> {
+        for (index, error in preprocessErrors) {
+          formatListedError(index, error)
+        }
+      }.join("\n\n")
+  )
+    new Error {
+      code = "PREPROCESS_FAILED"
+      message =
+        """
+        Preprocess failed with \(errorCount) error\(if (errorCount == 1) "" else "s"):
+
+        \(details)
+        """.trim()
+    }
+
+local function formatListedError(index: Int, error: Error): String =
+  "\(index + 1). \(error.code)\n\(indent(error.message))"
+
+local function indent(message: String): String = "   \(message.replaceAll("\n", "\n   "))"
 
 // noinspection UnresolvedElement
-function projectedManifestIdsMissing(refs: List<Any>): nothing =
-  throw(
+function projectedManifestIdsMissing(refs: List<Any>): Error = new Error {
+  code = "PROJECTED_MANIFEST_IDS_MISSING"
+  message =
     """
     Projected manifest values missing from manifest index:
     \(refs.map((ref) -> "- \(ref.id) at \(if (ref.path == "") "(root)" else ref.path)").join("\n"))
     """.trim()
-  )
+}

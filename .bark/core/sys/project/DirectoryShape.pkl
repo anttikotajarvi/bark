@@ -7,6 +7,11 @@ typealias Path = List<String>
 typealias PathExists = (Path) -> Boolean
 typealias DirectoryChildren = (Path) -> List<String>
 
+class Result {
+  paths: List<Path>
+  errors: List<Errors.Error>
+}
+
 function staticPaths(graph: Sys.AnyNode): List<Path> =
   if (graph is Sys.DirNode)
     childPaths(graph._nodes, List())
@@ -15,46 +20,39 @@ function staticPaths(graph: Sys.AnyNode): List<Path> =
   else
     List()
 
-function directoryPaths(
-  graph: Sys.AnyNode,
-  children: DirectoryChildren
-): List<Path> =
+function directoryPaths(graph: Sys.AnyNode, children: DirectoryChildren): List<Path> =
   expandedDescendantPaths(graph, List(), children)
 
 function missingPaths(paths: List<Path>, exists: PathExists): List<Path> =
   paths.filter((path) -> !exists.apply(path))
 
-function requireStaticPaths(
-  graph: Sys.AnyNode,
-  exists: PathExists,
-  extraInfo: String?
-): List<Path> =
+function checkStaticPaths(graph: Sys.AnyNode, exists: PathExists, extraInfo: String?): Result =
   let (paths = staticPaths(graph))
-    let (missing = missingPaths(paths, exists))
-      if (missing.isEmpty)
-        paths
-      else
-        Errors.missingRequiredDirectories(missing, extraInfo)
+  let (missing = missingPaths(paths, exists))
+    result(paths, missing, extraInfo)
 
 // Check existence before callers seed these paths. Once seeded, an absent
 // directory is indistinguishable from a valid directory with no entries.
-function requireDirectoryShape(
+function checkDirectoryShape(
   graph: Sys.AnyNode,
   exists: PathExists,
   children: DirectoryChildren,
-  extraInfo: String?
-): List<Path> =
+  extraInfo: String?,
+): Result =
   let (paths = directoryPaths(graph, children))
   let (missing = missingPaths(paths, exists))
-    if (missing.isEmpty)
-      paths
-    else
-      Errors.missingRequiredDirectories(missing, extraInfo)
+    result(paths, missing, extraInfo)
 
-local function childPaths(
-  nodes: Mapping<String, Sys.AnyNode>,
-  parentPath: Path
-): List<Path> =
+local function result(resolvedPaths: List<Path>, missingPaths: List<Path>, context: String?): Result = new Result {
+  paths = resolvedPaths
+  errors =
+    if (missingPaths.isEmpty)
+      List()
+    else
+      List(Errors.missingRequiredDirectories(missingPaths, context))
+}
+
+local function childPaths(nodes: Mapping<String, Sys.AnyNode>, parentPath: Path): List<Path> =
   new Listing<List<Path>> {
     for (name, node in nodes) {
       let (path = parentPath.add(name))
@@ -67,15 +65,15 @@ local function descendantPaths(node: Sys.AnyNode, path: Path): List<Path> =
     childPaths(node._nodes, path)
   else if (node is Sys.IndexNode)
     childPaths(node._nodes, path)
-  // Collection entry names are dynamic, so their descendants are not static
-  // graph paths and are intentionally not traversed here.
+    // Collection entry names are dynamic, so their descendants are not static
+    // graph paths and are intentionally not traversed here.
   else
     List()
 
 local function expandedChildPaths(
   nodes: Mapping<String, Sys.AnyNode>,
   parentPath: Path,
-  children: DirectoryChildren
+  children: DirectoryChildren,
 ): List<Path> =
   new Listing<List<Path>> {
     for (name, node in nodes) {
@@ -87,17 +85,20 @@ local function expandedChildPaths(
 local function expandedDescendantPaths(
   node: Sys.AnyNode,
   path: Path,
-  children: DirectoryChildren
+  children: DirectoryChildren,
 ): List<Path> =
   if (node is Sys.DirNode)
     expandedChildPaths(node._nodes, path, children)
   else if (node is Sys.IndexNode)
     expandedChildPaths(node._nodes, path, children)
   else if (node is Sys.CollectionNode)
-    children.apply(path).fold(List(), (acc, name) ->
-      let (entryPath = path.add(name))
-        acc + List(entryPath) +
-          expandedDescendantPaths(node._entryNode, entryPath, children)
-    )
+    children
+      .apply(path)
+      .fold(List(), (acc, name) ->
+        let (entryPath = path.add(name))
+          acc
+            + List(entryPath)
+            + expandedDescendantPaths(node._entryNode, entryPath, children)
+      )
   else
     List()

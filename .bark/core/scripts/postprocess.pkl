@@ -14,14 +14,26 @@ class Options {
     completionCandidates = "paths"
   }
   output: String? = null
+
+  /// Emit postprocess output even when Bark validation errors are present.
+  @BooleanFlag
+  force: Boolean = false
 }
 
+local shouldEmit = Data.result.errors.isEmpty || options.force
+
 output {
-  value = Data
-  text = if (options.output == null) super.text else ""
+  // When publication is blocked, expose only the clean structured result. This
+  // avoids rendering (and therefore forcing) an invalid projection.
+  value = if (shouldEmit) Data else Data.result
+  text =
+    if (options.output == null || !shouldEmit)
+      super.text
+    else
+      ""
 
   files {
-    when (options.output != null) {
+    when (options.output != null && shouldEmit) {
       ["\(options.output)"] {
         value = Data
       }
