@@ -43,6 +43,18 @@ function importPathFromOutput(target: String): String =
   let (common = commonLength(from, to.dropLast(1)))
     from.drop(common).map((_) -> "../").join("") + to.drop(common).join("/")
 
+/// Removes imports under any of `dirs` (paths relative to the data repo root, e.g.
+/// ".test-fixtures"). Expects repo-relative keys, so apply it after `rooted`.
+/// Values stay lazy.
+function without(imports: Mapping<String, Any>, dirs: List<String>): Mapping<String, Any> =
+  new Mapping {
+    for (path, value in imports) {
+      when (!dirs.any((dir) -> path == dir || path.startsWith("\(dir)/"))) {
+        [path] = value
+      }
+    }
+  }
+
 /// Rebases the keys of a glob result onto the data repo root by dropping `prefix`,
 /// the path from the glob's own file to the root (e.g. "../"). Values stay lazy.
 function rooted(globbed: Mapping<String, Any>, prefix: String): Mapping<String, Any> =

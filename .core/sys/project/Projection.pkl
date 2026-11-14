@@ -6,13 +6,12 @@ import "EntryTree.pkl" as EntryTree
 
 function render(
   tree: Mapping,
-  graph: Sys.AnyNode,
-  pathPrefix: String
+  graph: Sys.AnyNode
 ): String =
   """
   extends "\(PROJECTION_SCHEMA_PATH)"
 
-  \(renderMembers(tree, graph, List(), pathPrefix).expr)
+  \(renderMembers(tree, graph, List()).expr)
   """.trim()
 
 // The helpers below produce partial syntax and share the CodeRender invariant;
@@ -38,8 +37,8 @@ local function indentBlock(text: String, spaces: Int): String =
 local function getNode(graph: Sys.AnyNode, path: List<String>): Sys.AnyNode? =
   getChildNode(graph, path)
 
-local function importEntry(entry: EntryTree.Entry, pathPrefix: String): String =
-  "import(\"\(pathPrefix)\(entry.importPath)\")"
+local function importEntry(entry: EntryTree.Entry): String =
+  "import(\"\(entry.importPath)\")"
 
 local function usesElements(graph: Sys.AnyNode, path: List<String>): Boolean =
   let (node = getNode(graph, path))
@@ -51,11 +50,10 @@ local function isIndex(graph: Sys.AnyNode, path: List<String>): Boolean =
 local function renderObject(
   tree: Mapping,
   graph: Sys.AnyNode,
-  path: List<String>,
-  pathPrefix: String
+  path: List<String>
 ): CodeRender =
   let (constructor = if (usesElements(graph, path)) "Mapping" else "Dynamic")
-  let (body = renderMembers(tree, graph, path, pathPrefix).expr)
+  let (body = renderMembers(tree, graph, path).expr)
     new CodeRender {
       expr =
         if (body == "")
@@ -71,12 +69,11 @@ local function renderObject(
 local function renderValue(
   node: Any,
   graph: Sys.AnyNode,
-  path: List<String>,
-  pathPrefix: String
+  path: List<String>
 ): CodeRender =
   if (node is EntryTree.Entry)
     new CodeRender {
-      expr = importEntry(node, pathPrefix)
+      expr = importEntry(node)
     }
   // A seeded IndexNode without index.pkl remains a mapping. Emit syntactically
   // valid but deliberately type-invalid Pkl and let schema validation fail.
@@ -85,7 +82,7 @@ local function renderValue(
       expr = "new Dynamic {}"
     }
   else if (node is Mapping)
-    renderObject(node, graph, path, pathPrefix)
+    renderObject(node, graph, path)
   else
     throw("Unrecognized entry tree node at '\(path.join("/"))'")
 
@@ -93,12 +90,11 @@ local function renderMember(
   name: String,
   node: Any,
   graph: Sys.AnyNode,
-  parentPath: List<String>,
-  pathPrefix: String
+  parentPath: List<String>
 ): CodeRender =
   let (path = parentPath.add(name))
     if (usesElements(graph, parentPath))
-      let (value = renderValue(node, graph, path, pathPrefix).expr)
+      let (value = renderValue(node, graph, path).expr)
         new CodeRender {
           expr = "[\"\(name)\"] = \(value)"
         }
@@ -109,7 +105,7 @@ local function renderMember(
       getNode(graph, path) != null &&
       !isIndex(graph, path)
     )
-      let (body = renderMembers(node, graph, path, pathPrefix).expr)
+      let (body = renderMembers(node, graph, path).expr)
         new CodeRender {
           expr =
             if (body == "")
@@ -122,7 +118,7 @@ local function renderMember(
               """.trim()
         }
     else
-      let (value = renderValue(node, graph, path, pathPrefix).expr)
+      let (value = renderValue(node, graph, path).expr)
         new CodeRender {
           expr = "\(Expr.propertyName(name)) = \(value)"
         }
@@ -130,12 +126,11 @@ local function renderMember(
 local function renderMembers(
   tree: Mapping,
   graph: Sys.AnyNode,
-  path: List<String>,
-  pathPrefix: String
+  path: List<String>
 ): CodeRender =
   new Listing<CodeRender> {
     for (name, node in tree) {
-      renderMember(name, node, graph, path, pathPrefix)
+      renderMember(name, node, graph, path)
     }
   }.fold(new CodeRender {}, (acc, member) -> new CodeRender {
     expr =
