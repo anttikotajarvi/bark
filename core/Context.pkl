@@ -1,13 +1,10 @@
-/// What bark needs from a data repo: its graph, the files it can see, a way to
-/// read them, configuration for generated output, and helpers that turn these
-/// into paths. Users amend this once in `.bark/context.pkl`.
-/// Computed results belong to the script data modules.
+/// What the entry points need from a data repo: its graph, the files bark can see,
+/// a way to read them, and configuration. Any module that amends this can be passed
+/// to an entry point; `.bark/context.pkl` is just the usual place to define one.
 module bark.Context
 
-import "pkl:reflect"
+import "Config.pkl" as Config
 import "Meta.pkl" as Meta
-// Imports itself so the core root can be derived from this module's own location.
-import "Context.pkl" as Self
 
 /// The registry graph describing the data repo layout.
 graph: Meta.Graph
@@ -20,44 +17,8 @@ imports: Mapping<String, Any>
 /// Reads a file at a path relative to the data repo root; null if it does not exist.
 readFile: (String) -> Resource?
 
-/// Prefix generated source uses to refer to core modules, including the trailing
-/// separator (e.g. "@bark/" or "modulepath:/core/"). Defaults to the location the
-/// core was actually loaded from, which also pins its exact version.
-/// Overrides are not checked here: an address that does not resolve (such as an
-/// "@name/" the project does not declare as a dependency) only fails when a
-/// generated file is evaluated.
-coreRoot: String = reflect.Module(Self).uri.replaceLast("Context.pkl", "")
-
-/// Import string for a core module; `path` is relative to the core root
-/// (e.g. "sys/Generic.pkl").
-function coreImport(path: String): String = "\(coreRoot)\(path)"
-
-/// Directory generated files are written to, relative to the data repo root.
-/// Generated imports are written relative to it, so it must match where the
-/// scripts' `--output` files are actually placed.
-outputDir: String = ".bark/output"
-
-local function outputSegments(): List<String> =
-  let (segments = outputDir.split("/").filter((s) -> !s.isEmpty && s != "."))
-    if (segments.contains(".."))
-      throw("outputDir must not contain `..`: \(outputDir)")
-    else
-      segments
-
-local function commonLength(a: List<String>, b: List<String>): Int =
-  if (a.isEmpty || b.isEmpty || a.first != b.first)
-    0
-  else
-    1 + commonLength(a.drop(1), b.drop(1))
-
-/// Import path, as written in a file generated into `outputDir`, that reaches
-/// `target` (a path relative to the data repo root). Shared leading directories
-/// cancel out: from ".bark/output", ".bark/schemas/A.pkl" becomes "../schemas/A.pkl".
-function importPathFromOutput(target: String): String =
-  let (from = outputSegments())
-  let (to = target.split("/"))
-  let (common = commonLength(from, to.dropLast(1)))
-    from.drop(common).map((_) -> "../").join("") + to.drop(common).join("/")
+/// How bark writes generated files. Defaults apply; override in a `config { ... }` block.
+config: Config = Config
 
 /// Removes imports under any of `dirs` (paths relative to the data repo root, e.g.
 /// ".test-fixtures"). Expects repo-relative keys, so apply it after `rooted`.

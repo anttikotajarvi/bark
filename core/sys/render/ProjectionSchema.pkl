@@ -10,7 +10,7 @@ function render(ctx: Context): String =
   """
   open module ProjectionSchema
   // bark imports
-  \(Expr.importAs(ctx.coreImport("sys/Generic.pkl"), "G"))
+  \(Expr.importAs(ctx.config.coreImport("sys/Generic.pkl"), "G"))
 
   // User defined schemas
   \(SchemaImports.renderImports(ctx, ctx.graph))

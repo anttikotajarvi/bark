@@ -1,0 +1,41 @@
+/// Settings for generated files. All have defaults; override what you need.
+/// Bark does not decide where files are written. Config only says what to assume,
+/// so the imports in generated files resolve.
+module bark.Config
+
+import "pkl:reflect"
+// Imports itself so the core root can be derived from this module's own location.
+import "Config.pkl" as Self
+
+/// Prefix for core modules in generated source, with trailing separator
+/// (e.g. "@bark/"). Defaults to where the core was loaded from, pinning its version.
+/// An override that does not resolve only fails when a generated file is evaluated.
+coreRoot: String = reflect.Module(Self).uri.replaceLast("Config.pkl", "")
+
+/// Directory generated files are assumed to be placed in, relative to the data repo
+/// root. Their imports are written relative to it.
+assumedOutputDir: String = ".bark/output"
+
+/// Import string for a core module; `path` is relative to the core root.
+function coreImport(path: String): String = "\(coreRoot)\(path)"
+
+/// Import path from a file in `assumedOutputDir` to `target`, a path relative to the
+/// data repo root. ".bark/schemas/A.pkl" from ".bark/output" is "../schemas/A.pkl".
+function importPathFromOutput(target: String): String =
+  let (from = outputSegments())
+  let (to = target.split("/"))
+  let (common = commonLength(from, to.dropLast(1)))
+    from.drop(common).map((_) -> "../").join("") + to.drop(common).join("/")
+
+local function outputSegments(): List<String> =
+  let (segments = assumedOutputDir.split("/").filter((s) -> !s.isEmpty && s != "."))
+    if (segments.contains(".."))
+      throw("assumedOutputDir must not contain `..`: \(assumedOutputDir)")
+    else
+      segments
+
+local function commonLength(a: List<String>, b: List<String>): Int =
+  if (a.isEmpty || b.isEmpty || a.first != b.first)
+    0
+  else
+    1 + commonLength(a.drop(1), b.drop(1))

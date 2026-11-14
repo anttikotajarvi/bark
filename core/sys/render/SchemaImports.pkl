@@ -12,7 +12,7 @@ const function moduleNameFromSchema(schema: Sys.Schema): String =
 
 function renderImports(ctx: Context, node: Sys.AnyNode): String =
   collectSchemas(ctx, node).toMap().values.map((schema) ->
-    Expr.importAs(ctx.importPathFromOutput(schemaFilePath(schema)), moduleNameFromSchema(schema))
+    Expr.importAs(ctx.config.importPathFromOutput(schemaFilePath(schema)), moduleNameFromSchema(schema))
   ).join("\n")
 
 // Schema discovery and deduplication are implementation policy for the import

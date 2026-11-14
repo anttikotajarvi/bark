@@ -5,8 +5,10 @@ amends "@bark/Context.pkl"
 // Every Pkl file in the data repo. Narrow this glob to scope what bark can see.
 imports = rooted(import*("../**.pkl"), "../")
 
-// How generated files refer to the core: through this project's `bark` dependency.
-coreRoot = "@bark/"
+config {
+  // How generated files refer to the core: through this project's `bark` dependency.
+  coreRoot = "@bark/"
+}
 
 graph = import("registry.pkl").graph
 

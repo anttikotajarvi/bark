@@ -6,8 +6,8 @@ import "../Context.pkl" as Context
 import "preprocess-data.pkl" as Data
 import "../sys/Errors.pkl" as Errors
 
-local PREPROCESS_SCHEMA_PATH = ctx.coreImport("sys/preprocess/PreprocessData.pkl")
-local ERRORS_PATH = ctx.coreImport("sys/Errors.pkl")
+local PREPROCESS_SCHEMA_PATH = ctx.config.coreImport("sys/preprocess/PreprocessData.pkl")
+local ERRORS_PATH = ctx.config.coreImport("sys/Errors.pkl")
 
 /// Bark context supplied by the entry point (.bark/preprocess.pkl).
 ctx: Context
