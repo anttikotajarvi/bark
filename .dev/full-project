@@ -4,7 +4,7 @@ set -eu
 
 PKL=${PKL:-pkl}
 BARK_DIR=.bark
-# Must match `outputDir` in .bark/context.pkl: generated imports are relative to it.
+# Must match `config.assumedOutputDir` in .bark/context.pkl: generated imports are relative to it.
 OUTPUT_DIR=$BARK_DIR/output
 
 if [ "$#" -gt 1 ]; then
