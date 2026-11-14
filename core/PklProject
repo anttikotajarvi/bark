@@ -5,6 +5,13 @@ package {
   baseUri = "package://example.com/bark-core"
   version = "0.1.0"
   packageZipUrl = "https://example.com/bark-core@\(version).zip"
+  // The default also excludes every dotfile, which would drop template/.bark/.gitignore,
+  // and PklProject, which init imports to read the package URI.
+  exclude = new Listing {
+    "PklProject.deps.json"
+    ".git/**"
+    ".pkl-lsp/**"
+  }
 }
 
 evaluatorSettings {

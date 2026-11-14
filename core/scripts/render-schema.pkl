@@ -5,7 +5,7 @@ extends "pkl:Command"
 import "../Context.pkl" as Context
 import "../sys/render/ProjectionSchema.pkl" as ProjectionSchema
 
-/// Bark context supplied by the entry point (.bark/render-schema.pkl).
+/// Bark context supplied by the entry point (.bark/scripts/render-schema.pkl).
 ctx: Context
 
 options: Options

@@ -9,7 +9,7 @@ import "../sys/Errors.pkl" as Errors
 local PREPROCESS_SCHEMA_PATH = ctx.config.coreImport("sys/preprocess/PreprocessData.pkl")
 local ERRORS_PATH = ctx.config.coreImport("sys/Errors.pkl")
 
-/// Bark context supplied by the entry point (.bark/preprocess.pkl).
+/// Bark context supplied by the entry point (.bark/scripts/preprocess.pkl).
 ctx: Context
 
 local data = (Data) { ctx = module.ctx }

@@ -1,0 +1,67 @@
+open module bark.Init
+
+extends "pkl:Command"
+
+// The core's own project file: the source of its package URI.
+import "PklProject" as Core
+
+/// Writes the default layout (`template/`) and a `PklProject` into the working
+/// directory. A file that already exists is left alone; to reset one, delete it and
+/// run again.
+
+// Everything under template/, directories included.
+local entries: Mapping<String, Resource> = read*("template/**")
+
+// A path is a directory if another entry lies below it.
+local function isDirectory(path: String): Boolean =
+  entries.keys.any((other) -> other.startsWith("\(path)/"))
+
+local function targetOf(path: String): String = path.replaceFirst("template/", "")
+
+// The template's stubs refer to the core as `@bark`, so the dependency uses that name.
+local packageUri: String = Core.package!!.uri
+
+local PROJECT_FILE: String =
+  """
+  amends "pkl:Project"
+  evaluatorSettings {
+    modulePath {
+      "."
+    }
+  }
+  dependencies {
+    ["bark"] { uri = "\(packageUri)" }
+  }
+
+  """
+
+local contents: Mapping<String, String> = new {
+  for (path in entries.keys.toList().filter((path) -> !isDirectory(path))) {
+    [targetOf(path)] = entries[path].text
+  }
+  ["PklProject"] = PROJECT_FILE
+}
+
+local rootPath: String = read("env:PWD")
+
+local function exists(path: String): Boolean = read?("file://\(rootPath)/\(path)") != null
+
+local paths: List<String> = contents.keys.toList().sort()
+local created: List<String> = paths.filter((path) -> !exists(path))
+local skipped: List<String> = paths.filter((path) -> exists(path))
+
+output {
+  text =
+    created.map((path) -> "created  \(path)").join("\n")
+      + (if (created.isEmpty || skipped.isEmpty) "" else "\n")
+      + skipped.map((path) -> "skipped  \(path) (exists)").join("\n")
+      + "\n"
+
+  files {
+    for (path in created) {
+      [path] {
+        text = contents[path]
+      }
+    }
+  }
+}

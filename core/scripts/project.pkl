@@ -8,7 +8,7 @@ import "../sys/preprocess/PreprocessData.pkl" as PreprocessData
 import "../sys/project/EntryTree.pkl" as EntryTree
 import "../sys/project/Projection.pkl" as Projection
 
-/// Bark context supplied by the entry point (.bark/project.pkl).
+/// Bark context supplied by the entry point (.bark/scripts/project.pkl).
 ctx: Context
 
 /// Preprocess output (projection-meta.pkl), supplied by the entry point.

@@ -1,0 +1,7 @@
+amends "@bark/RegistryDeclaration.pkl"
+
+import "@bark/Meta.pkl" as Meta
+
+// Describe the layout of the data repo here, e.g.
+//   ["products"] = Meta.Table(Meta.schema("schemas/Product.pkl"))
+graph = Meta.Dir(new Meta.Children {})
