@@ -1,7 +1,6 @@
 module Constants
 
 const BARK_DIRNAME = ".bark"
-const BARK_MODULEPATH_PREFIX = "modulepath:/\(BARK_DIRNAME)/"
 const BUNDLE_DIRNAME = "bundle"
 
 const PKL_EXTENSION = ".pkl"

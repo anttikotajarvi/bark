@@ -1,6 +1,7 @@
 import "Generic.pkl" as G
 
 class Schema {
+  /// Relative to the .bark directory, where registry.pkl lives.
   path: G.SchemaPath
 }
 

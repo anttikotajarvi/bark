@@ -8,14 +8,14 @@ import "Expr.pkl" as Expr
 import "GraphTypes.pkl" as GraphTypes
 import "SchemaImports.pkl" as SchemaImports
 
-function render(ctx: Context, pathPrefix): String =
+function render(ctx: Context): String =
   """
   open module ProjectionSchema
   // bark imports
   \(Expr.importAs(reflect.Module(Generic).uri, "G"))
 
   // User defined schemas
-  \(SchemaImports.renderImports(ctx, ctx.graph, pathPrefix))
+  \(SchemaImports.renderImports(ctx, ctx.graph))
 
   \(compileTypes(ctx.graph))
   """

@@ -1,6 +1,13 @@
+open module bark.scripts.Registry
+
 extends "pkl:Command"
 
-local graph = import("../../registry.pkl").graph
+import "../Context.pkl" as Context
+
+/// Bark context supplied by the entry point (.bark/registry-check.pkl).
+ctx: Context
+
+local graph = ctx.graph
 
 options: Options
 
