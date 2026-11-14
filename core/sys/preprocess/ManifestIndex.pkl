@@ -1,6 +1,6 @@
 module bark.preprocess.ManifestIndex
 
-import "../constants.pkl" as CFG
+import "../constants.pkl" as Constants
 import "../Errors.pkl" as Errors
 import "../PathScope.pkl" as PathScope
 
@@ -21,7 +21,7 @@ class BuildResult {
 
 /// Derives the target name dictated by a manifest sidecar's filename.
 const function expectedTargetName(localPath: String): String =
-  localPath.split("/").last.replaceLast(CFG.MANIFEST_SUFFIX, "")
+  localPath.split("/").last.replaceLast(Constants.MANIFEST_SUFFIX, "")
 
 function build(
   imports: Mapping<String, Any>,
@@ -59,7 +59,7 @@ local function targetPath(localPath: String, target: String): String =
 local function buildRecords(imports: Mapping<String, Any>): List<ManifestRecord> =
   // Only manifest sidecars matter; values of other imports stay unevaluated.
   imports.keys
-    .filter((path) -> path.endsWith(CFG.MANIFEST_SUFFIX))
+    .filter((path) -> path.endsWith(Constants.MANIFEST_SUFFIX))
     .filter((path) -> PathScope.keepUserLocalPath(path))
     .toList()
     .map((path) ->

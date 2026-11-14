@@ -1,6 +1,6 @@
 module bark.project.EntryTree
 
-import "../constants.pkl" as CFG
+import "../constants.pkl" as Constants
 
 typealias NodeName = String
 
@@ -10,7 +10,7 @@ class Entry {
   local els = localPath.split("/")
   fixed anchors: List<String> = els.dropLast(1)
   local filename = els.last
-  fixed name: String = filename.replaceLast(CFG.PKL_EXTENSION, "")
+  fixed name: String = filename.replaceLast(Constants.PKL_EXTENSION, "")
 }
 
 // Pkl type aliases cannot be recursive, so the functions below own the
@@ -49,7 +49,7 @@ local function consumeChild(
   if (curNode is Entry)
     null
   else if (curPath.isEmpty)
-    if (entry.name == CFG.INDEX_NAME)
+    if (entry.name == Constants.INDEX_NAME)
       entry
     else if (curNode.containsKey(entry.name))
       null

@@ -1,6 +1,6 @@
 module Generic
 
-import "constants.pkl" as CFG
+import "constants.pkl" as Constants
 
 typealias PosixDirName = String(
   !contains("/"),
@@ -9,5 +9,5 @@ typealias PosixDirName = String(
 typealias PosixFileName = PosixDirName
 typealias SchemaPath = String(
   !contains(".."),
-  endsWith(CFG.PKL_EXTENSION)
+  endsWith(Constants.PKL_EXTENSION)
 )

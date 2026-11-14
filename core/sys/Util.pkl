@@ -1,11 +1,11 @@
 module bark.Util
 
-import "constants.pkl" as CFG
+import "constants.pkl" as Constants
 
 typealias PklImportPath =
   String(
     !isBlank,
-    endsWith(CFG.PKL_EXTENSION)
+    endsWith(Constants.PKL_EXTENSION)
   )
 
 typealias PklIdentifier =

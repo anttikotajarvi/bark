@@ -1,6 +1,6 @@
 module bark.PathScope
 
-import "constants.pkl" as CFG
+import "constants.pkl" as Constants
 
 function keepUserLocalPath(path: String): Boolean =
   !hasBarkSegment(path)
@@ -13,9 +13,9 @@ function keepDirectoryChild(
   path: List<String>, // might need this later
   name: String
 ): Boolean =
-  name != CFG.BARK_DIRNAME
+  name != Constants.BARK_DIRNAME
 
 local function hasBarkSegment(path: String): Boolean =
-  path == CFG.BARK_DIRNAME ||
-    path.startsWith("\(CFG.BARK_DIRNAME)/") ||
-    path.contains("/\(CFG.BARK_DIRNAME)/")
+  path == Constants.BARK_DIRNAME ||
+    path.startsWith("\(Constants.BARK_DIRNAME)/") ||
+    path.contains("/\(Constants.BARK_DIRNAME)/")

@@ -2,7 +2,7 @@ module bark.render.SchemaImports
 
 import "../../Context.pkl" as Context
 import "../GraphModel.pkl" as Sys
-import "../constants.pkl" as CFG
+import "../constants.pkl" as Constants
 import "../Util.pkl" as Util
 import "Expr.pkl" as Expr
 
@@ -22,7 +22,7 @@ local typealias SchemaID = String
 // Identifies a schema by the file it resolves to, read through the context.
 // Schema paths are relative to the .bark directory.
 local function schemaFilePath(schema: Sys.Schema): String =
-  "\(CFG.BARK_DIRNAME)/\(schema.path)"
+  "\(Constants.BARK_DIRNAME)/\(schema.path)"
 
 local function schemaId(ctx: Context, schema: Sys.Schema): SchemaID =
   let (path = schemaFilePath(schema))

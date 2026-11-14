@@ -1,6 +1,6 @@
 module Manifest
 
-import "sys/constants.pkl" as CFG
+import "sys/constants.pkl" as Constants
 
 typealias ManifestId = String(!isEmpty)
 
@@ -13,7 +13,7 @@ typealias ManifestTargetName = String(
 
 typealias TagValue = String | Number | Boolean
 
-hidden fixed __bark = CFG.MANIFEST_MARKER
+hidden fixed __bark = Constants.MANIFEST_MARKER
 
 id: ManifestId
 target: ManifestTargetName
