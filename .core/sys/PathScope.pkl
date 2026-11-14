@@ -2,33 +2,6 @@ module bark.PathScope
 
 import "constants.pkl" as CFG
 
-class ScopedPath {
-  importPath: String
-  physicalLocalPath: String
-  localPath: String
-}
-
-function scopedPath(importPath: String): ScopedPath? =
-  let (physical = importPath)
-    if (!inScope(physical))
-      null
-    else
-      new ScopedPath {
-        importPath = importPath
-        physicalLocalPath = physical
-        localPath = physical
-      }
-
-function scopedPaths(importPath: String): List<ScopedPath> =
-  let (scoped = scopedPath(importPath))
-    if (scoped == null)
-      List()
-    else
-      List(scoped)
-
-function physicalPathFromSegments(path: List<String>): String =
-  path.join("/")
-
 function keepUserLocalPath(path: String): Boolean =
   !hasBarkSegment(path)
 
@@ -41,14 +14,7 @@ function keepDirectoryChild(
   path: List<String>,
   name: String
 ): Boolean =
-  name != CFG.BARK_DIRNAME &&
-    !(path.isEmpty && name == CFG.TEST_FIXTURES_DIR)
-
-// Temporary: fixtures are excluded here until scoping moves into .bark/context.pkl.
-local function inScope(path: String): Boolean = !isTestFixturePath(path)
-
-local function isTestFixturePath(path: String): Boolean =
-  path == CFG.TEST_FIXTURES_DIR || path.startsWith("\(CFG.TEST_FIXTURES_DIR)/")
+  name != CFG.BARK_DIRNAME
 
 local function hasBarkSegment(path: String): Boolean =
   path == CFG.BARK_DIRNAME ||

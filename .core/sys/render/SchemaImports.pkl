@@ -1,6 +1,8 @@
 module bark.render.SchemaImports
 
+import "../../Context.pkl" as Context
 import "../GraphModel.pkl" as Sys
+import "../constants.pkl" as CFG
 import "../Util.pkl" as Util
 import "Expr.pkl" as Expr
 
@@ -8,8 +10,8 @@ import "Expr.pkl" as Expr
 const function moduleNameFromSchema(schema: Sys.Schema): String =
   Util.stem(schema.path)
 
-function renderImports(node: Sys.AnyNode, pathPrefix: String): String =
-  collectSchemas(node).toMap().values.map((schema) ->
+function renderImports(ctx: Context, node: Sys.AnyNode, pathPrefix: String): String =
+  collectSchemas(ctx, node).toMap().values.map((schema) ->
     Expr.importAs("\(pathPrefix)\(schema.path)", moduleNameFromSchema(schema))
   ).join("\n")
 
@@ -17,8 +19,15 @@ function renderImports(node: Sys.AnyNode, pathPrefix: String): String =
 // renderer, rather than a general graph-query API.
 local typealias SchemaID = String
 
-local function schemaId(schema: Sys.Schema): SchemaID =
-  schema.resource.uri
+// Identifies a schema by the file it resolves to, read through the context.
+// Schema paths are relative to the .bark directory.
+local function schemaId(ctx: Context, schema: Sys.Schema): SchemaID =
+  let (path = "\(CFG.BARK_DIRNAME)/\(schema.path)")
+  let (resource = ctx.readFile.apply(path))
+    if (resource == null)
+      throw("Schema file does not exist: \(path)")
+    else
+      resource.uri
 
 local function collectSchemaListFromNodes(nodes: Mapping<String, Sys.AnyNode>): List<Sys.Schema> =
   new Listing<List<Sys.Schema>> {
@@ -44,17 +53,17 @@ local function collectSchemaList(node: Sys.AnyNode): List<Sys.Schema> =
   else
     throw("Unrecognized node type: '\(node.type)'")
 
-local function dedupeSchemas(schemas: List<Sys.Schema>): List<Sys.Schema> =
+local function dedupeSchemas(ctx: Context, schemas: List<Sys.Schema>): List<Sys.Schema> =
   schemas.fold(List(), (acc, schema) ->
-    if (acc.any((x) -> schemaId(x) == schemaId(schema)))
+    if (acc.any((x) -> schemaId(ctx, x) == schemaId(ctx, schema)))
       acc
     else
       acc + List(schema)
   )
 
-local function collectSchemas(node: Sys.AnyNode): Mapping<SchemaID, Sys.Schema> =
+local function collectSchemas(ctx: Context, node: Sys.AnyNode): Mapping<SchemaID, Sys.Schema> =
   new Mapping<SchemaID, Sys.Schema> {
-    for (schema in dedupeSchemas(collectSchemaList(node))) {
-      [schemaId(schema)] = schema
+    for (schema in dedupeSchemas(ctx, collectSchemaList(node))) {
+      [schemaId(ctx, schema)] = schema
     }
   }

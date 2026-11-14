@@ -20,7 +20,7 @@ directoryPaths = directoryShapeResult.paths
 preprocessErrors = manifestIndexResult.errors + directoryShapeResult.errors
 
 local function directoryResource(path: List<String>): Resource? =
-  ctx.readFile.apply(PathScope.physicalPathFromSegments(path))
+  ctx.readFile.apply(path.join("/"))
 
 local function directoryChildren(path: List<String>): List<String> =
   let (resource = directoryResource(path))

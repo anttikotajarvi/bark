@@ -44,19 +44,10 @@ function build(
 // Transient records and validation stages are owned by build. They must not be
 // exposed as independently overridable ways to construct an unchecked index.
 local class ManifestRecord {
-  importPath: String
   localPath: String
-  physicalLocalPath: String
   manifest: Any
   expectedTarget: String
   targetPath: String
-  physicalTargetPath: String
-}
-
-local class ManifestImport {
-  importPath: String
-  localPath: String
-  physicalLocalPath: String
 }
 
 local function parentPath(localPath: String): String = localPath.split("/").dropLast(1).join("/")
@@ -66,40 +57,20 @@ local function targetPath(localPath: String, target: String): String =
     if (parent == "") target else "\(parent)/\(target)"
 
 local function buildRecords(imports: Mapping<String, Any>): List<ManifestRecord> =
-  let (
-    manifestImports =
-      new Listing<ManifestImport> {
-        // Only manifest sidecars matter; values of other imports stay unevaluated.
-        for (path in imports.keys.filter((k) -> k.endsWith(CFG.MANIFEST_SUFFIX))) {
-          for (
-            scoped in
-              PathScope
-                .scopedPaths(path)
-                .filter((p) -> PathScope.keepUserLocalPath(p.localPath))
-          ) {
-            new ManifestImport {
-              importPath = path
-              localPath = scoped.localPath
-              physicalLocalPath = scoped.physicalLocalPath
-            }
-          }
+  // Only manifest sidecars matter; values of other imports stay unevaluated.
+  imports.keys
+    .filter((path) -> path.endsWith(CFG.MANIFEST_SUFFIX))
+    .filter((path) -> PathScope.keepUserLocalPath(path))
+    .toList()
+    .map((path) ->
+      let (expected = expectedTargetName(path))
+        new ManifestRecord {
+          localPath = path
+          manifest = imports[path]
+          expectedTarget = expected
+          targetPath = targetPath(path, expected)
         }
-      }.toList()
-  )
-    new Listing<ManifestRecord> {
-      for (entry in manifestImports) {
-        let (expected = expectedTargetName(entry.localPath))
-          new ManifestRecord {
-            importPath = entry.importPath
-            localPath = entry.localPath
-            physicalLocalPath = entry.physicalLocalPath
-            manifest = imports[entry.importPath]
-            expectedTarget = expected
-            targetPath = targetPath(entry.localPath, expected)
-            physicalTargetPath = targetPath(entry.physicalLocalPath, expected)
-          }
-      }
-    }.toList()
+    )
 
 local function sidecarErrors(rec: ManifestRecord): List<Errors.Error> =
   if (rec.manifest.target == rec.expectedTarget)
@@ -114,7 +85,7 @@ local function sidecarErrors(rec: ManifestRecord): List<Errors.Error> =
     )
 
 local function targetErrors(targetExists: TargetExists, rec: ManifestRecord): List<Errors.Error> =
-  if (targetExists.apply(rec.physicalTargetPath))
+  if (targetExists.apply(rec.targetPath))
     List()
   else
     List(Errors.manifestTargetMissing(rec.localPath, rec.targetPath))

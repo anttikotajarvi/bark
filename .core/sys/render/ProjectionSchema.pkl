@@ -1,31 +1,28 @@
 module bark.render.ProjectionSchema
 
+import "pkl:reflect"
+import "../../Context.pkl" as Context
+import "../Generic.pkl" as Generic
 import "../GraphModel.pkl" as Sys
 import "Expr.pkl" as Expr
 import "GraphTypes.pkl" as GraphTypes
 import "SchemaImports.pkl" as SchemaImports
 
-function render(graph: Sys.AnyNode, pathPrefix: String): String =
+function render(ctx: Context, pathPrefix): String =
   """
   open module ProjectionSchema
   // bark imports
-  \(dependency("../Generic.pkl", "../sys/Generic.pkl", "G"))
+  \(Expr.importAs(reflect.Module(Generic).uri, "G"))
 
   // User defined schemas
-  \(SchemaImports.renderImports(graph, pathPrefix))
+  \(SchemaImports.renderImports(ctx, ctx.graph, pathPrefix))
 
-  \(compileTypes(graph))
+  \(compileTypes(ctx.graph))
   """
 
-// These functions emit fragments tied to this module's fixed root name and
-// relative layout; render is the complete schema-generation operation.
+// These functions emit fragments tied to this module's fixed root name;
+// render is the complete schema-generation operation.
 local const ROOT_NAME = "Graph"
-
-// Shorthand for safely adding dependencies
-local function dependency(readPath: String, importPath: String, name: String): String =
-  if(read?(readPath) != null)
-    Expr.importAs(importPath, name)
-  else throw("Dependency doesnt exist: \(readPath)")
 
 local function compileTypes(graph: Sys.AnyNode): String =
   let(rootNode = GraphTypes.nodeType(graph, List(ROOT_NAME)))

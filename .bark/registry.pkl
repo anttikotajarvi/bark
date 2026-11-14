@@ -1,9 +1,7 @@
 amends "@bark/RegistryDeclaration.pkl" // Required amendment
 import "@bark/Meta.pkl" as Meta
 
-local selectedRegistry = (read?("env:BARK_TEST_REGISTRY") ?? "default") as String
-local fixtureRegistries = import*("../.test-fixtures/*/.bark-test/registry.pkl")
-local selectedFixtureRegistryPath = "../.test-fixtures/\(selectedRegistry)/.bark-test/registry.pkl"
+
 
 local schemas = new {
   company = Meta.schema("schemas/Company.pkl")
@@ -34,10 +32,4 @@ local defaultGraph =
       })
   })
 
-graph =
-  if (selectedRegistry == "default")
-    defaultGraph
-  else if (fixtureRegistries.containsKey(selectedFixtureRegistryPath))
-    fixtureRegistries[selectedFixtureRegistryPath].graph
-  else
-    throw("Unknown BARK_TEST_REGISTRY: \(selectedRegistry)")
+graph = defaultGraph

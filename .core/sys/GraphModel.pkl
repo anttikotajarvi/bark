@@ -1,11 +1,7 @@
 import "Generic.pkl" as G
-import "constants.pkl" as CFG
 
 class Schema {
   path: G.SchemaPath
-  // Bark scripts require modulepath:/ to resolve to the data repo root.
-  local const PATH_OFFSET = CFG.BARK_MODULEPATH_PREFIX
-  resource: Resource|String = read(PATH_OFFSET+path)
 }
 
 abstract class AnyNode {
