@@ -1,4 +1,4 @@
-// repo/.bark/internal/PklProject
+// core/PklProject: the bark core package. Data repos depend on it as `bark` (`@bark/...`).
 amends "pkl:Project"
 package {
   name = "bark-core"

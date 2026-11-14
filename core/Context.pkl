@@ -21,7 +21,7 @@ imports: Mapping<String, Any>
 readFile: (String) -> Resource?
 
 /// Prefix generated source uses to refer to core modules, including the trailing
-/// separator (e.g. "@bark/" or "modulepath:/.core/"). Defaults to the location the
+/// separator (e.g. "@bark/" or "modulepath:/core/"). Defaults to the location the
 /// core was actually loaded from, which also pins its exact version.
 /// Overrides are not checked here: an address that does not resolve (such as an
 /// "@name/" the project does not declare as a dependency) only fails when a
