@@ -1,10 +1,17 @@
 open module bark.postprocess.PostprocessData
 
 import "../Errors.pkl" as Errors
+import "../preprocess/PreprocessData.pkl" as PreprocessData
 
 class PostprocessResult {
   errors: List<Errors.Error>
 }
+
+/// Input slots, set by the amender (scripts/postprocess.pkl).
+/// The projection stays `Any`: its real type is the user-specific generated schema,
+/// and a typed slot would load it even when postprocess never needs to read it.
+hidden metadataModule: PreprocessData
+hidden projectionModule: Any
 
 projection: Any
 metadata: Any

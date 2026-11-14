@@ -1,0 +1,6 @@
+// Bark postprocess entrypoint. Generated once by the core initializer; edit freely.
+extends "@bark/scripts/postprocess.pkl"
+
+// Outputs of preprocess and project. Keep these paths in sync with `outputDir` in context.pkl.
+metadata = import("output/projection-meta.pkl")
+projection = import("output/projection.pkl")

@@ -1,8 +1,21 @@
-module bark.scripts.Postprocess
+open module bark.scripts.Postprocess
 
 extends "pkl:Command"
 
+import "../sys/preprocess/PreprocessData.pkl" as PreprocessData
 import "postprocess-data.pkl" as Data
+
+/// Preprocess output (projection-meta.pkl), supplied by the entry point.
+metadata: PreprocessData
+
+/// The evaluated projection (projection.pkl), supplied by the entry point. Left as
+/// `Any` and read lazily: it is not touched when preprocessing already failed.
+projection: Any
+
+local data = (Data) {
+  metadataModule = module.metadata
+  projectionModule = module.projection
+}
 
 options: Options
 
@@ -20,12 +33,12 @@ class Options {
   force: Boolean = false
 }
 
-local shouldEmit = Data.result.errors.isEmpty || options.force
+local shouldEmit = data.result.errors.isEmpty || options.force
 
 output {
   // When publication is blocked, expose only the clean structured result. This
   // avoids rendering (and therefore forcing) an invalid projection.
-  value = if (shouldEmit) Data else Data.result
+  value = if (shouldEmit) data else data.result
   text =
     if (options.output == null || !shouldEmit)
       super.text
@@ -35,7 +48,7 @@ output {
   files {
     when (options.output != null && shouldEmit) {
       ["\(options.output)"] {
-        value = Data
+        value = data
       }
     }
   }

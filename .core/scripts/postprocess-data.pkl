@@ -1,22 +1,20 @@
 amends "../sys/postprocess/PostprocessData.pkl"
 
-import "../generated/projection-meta.pkl" as Metadata
-import "../generated/projection.pkl" as Projection
 import "../sys/postprocess/ManifestCoherence.pkl" as ManifestCoherence
 import "../sys/postprocess/PreprocessCoherence.pkl" as PreprocessCoherence
 
-local preprocessCoherenceErrors = PreprocessCoherence.check(Metadata.preprocessErrors)
+local preprocessCoherenceErrors = PreprocessCoherence.check(metadataModule.preprocessErrors)
 
 // Do not force a potentially invalid projection after preprocessing has already
 // established that the inputs are incoherent.
 local manifestCoherenceErrors =
   if (preprocessCoherenceErrors.isEmpty)
-    ManifestCoherence.check(Projection, Metadata.manifestIndex)
+    ManifestCoherence.check(projectionModule, metadataModule.manifestIndex)
   else
     List()
 
-projection = Projection
-metadata = Metadata
+projection = projectionModule
+metadata = metadataModule
 result = new PostprocessResult {
   errors = preprocessCoherenceErrors + manifestCoherenceErrors
 }

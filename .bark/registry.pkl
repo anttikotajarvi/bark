@@ -16,7 +16,7 @@ local defaultGraph =
         ["logs"] = Meta.Table(schemas.log)
       })
 
-    ["products"] = Meta.Table(schemas.product)
+    //["products"] = Meta.Table(schemas.product)
 
     ["lots"] = Meta.Collection(Meta.Index(schemas.lot))
 
