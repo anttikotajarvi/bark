@@ -14,9 +14,9 @@ ctx: Context
 /// Preprocess output (projection-meta.pkl), supplied by the entry point.
 metadata: PreprocessData
 
-// Pkl entries under the data repo root; PathScope excludes .bark and schema files.
+// Pkl entries under the data repo root that belong in the projection.
 local entries = new Listing<EntryTree.Entry> {
-  for (path in ctx.imports.keys.filter((p) -> PathScope.keepProjectLocalPath(p))) {
+  for (path in ctx.imports.keys.filter((p) -> PathScope.keepProjectLocalPath(p, ctx.config.omittedFilenames))) {
     new EntryTree.Entry {
       localPath = path
       importPath = ctx.config.importPathFromOutput(path)

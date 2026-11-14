@@ -5,13 +5,12 @@ import "constants.pkl" as CFG
 function keepUserLocalPath(path: String): Boolean =
   !hasBarkSegment(path)
 
-function keepProjectLocalPath(path: String): Boolean =
-  keepUserLocalPath(path) &&
-    !path.endsWith("/\(CFG.INDEX_SCHEMA_FILENAME)") &&
-    !path.endsWith("/\(CFG.SCHEMA_FILENAME)")
+/// Whether a file belongs in the projection: not under .bark, and not named in `omittedFilenames`.
+function keepProjectLocalPath(path: String, omittedFilenames: List<String>): Boolean =
+  keepUserLocalPath(path) && !omittedFilenames.contains(path.split("/").last)
 
 function keepDirectoryChild(
-  path: List<String>,
+  path: List<String>, // might need this later
   name: String
 ): Boolean =
   name != CFG.BARK_DIRNAME

@@ -6,8 +6,6 @@ const BUNDLE_DIRNAME = "bundle"
 const PKL_EXTENSION = ".pkl"
 const INDEX_NAME = "index"
 const INDEX_FILENAME = "\(INDEX_NAME)\(PKL_EXTENSION)"
-const SCHEMA_FILENAME = "schema.pkl"
-const INDEX_SCHEMA_FILENAME = "index-schema.pkl"
 
 const MANIFEST_SUFFIX = ".manifest.pkl"
 const BARK_MARKER_FIELD = "__bark"

@@ -16,6 +16,9 @@ coreRoot: String = reflect.Module(Self).uri.replaceLast("Config.pkl", "")
 /// root. Their imports are written relative to it.
 assumedOutputDir: String = ".bark/output"
 
+/// Files left out of the projection, matched by file name in any directory.
+omittedFilenames: List<String> = List("schema.pkl", "index-schema.pkl")
+
 /// Import string for a core module; `path` is relative to the core root.
 function coreImport(path: String): String = "\(coreRoot)\(path)"
 
