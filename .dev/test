@@ -2,9 +2,11 @@
 # Runs each test case in tests/<case>/ as its own bark project.
 #
 # A case provides repo/ (its data repo files and .bark/registry.pkl, schemas) and
-# test.pkl (pkl:test assertions). The runner builds tests/.work/<case>/repo from
-# tests/_template plus the case's repo/, runs the full pipeline there, then runs
-# test.pkl with the pipeline's exit code and output as properties.
+# test.pkl (pkl:test assertions). The runner builds tests/.work/<case>/repo from the
+# core's default layout (core/template), tests/_template/PklProject (which depends on
+# the local core instead of the published package) and the case's repo/, runs the
+# full pipeline there, then runs test.pkl with the pipeline's exit code and output
+# as properties.
 
 set -euo pipefail
 
@@ -44,7 +46,8 @@ run_case() {
 
   rm -rf "$work"
   mkdir -p "$work/repo"
-  cp -r "$TESTS_DIR/_template/." "$work/repo/"
+  cp -r core/template/. "$work/repo/"
+  cp "$TESTS_DIR/_template/PklProject" "$work/repo/PklProject"
   cp -r "$TESTS_DIR/$name/repo/." "$work/repo/"
   cp "$TESTS_DIR/$name/test.pkl" "$work/test.pkl"
 

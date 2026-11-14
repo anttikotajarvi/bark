@@ -4,6 +4,7 @@ set -eu
 
 PKL=${PKL:-pkl}
 BARK_DIR=.bark
+SCRIPTS_DIR=$BARK_DIR/scripts
 # Must match `config.assumedOutputDir` in .bark/context.pkl: generated imports are relative to it.
 OUTPUT_DIR=$BARK_DIR/output
 
@@ -24,19 +25,19 @@ fi
 
 mkdir -p "$OUTPUT_DIR"
 
-"$PKL" run "$BARK_DIR/render-schema.pkl" \
+"$PKL" run "$SCRIPTS_DIR/render-schema.pkl" \
   --output "$OUTPUT_DIR/ProjectionSchema.pkl"
 
-"$PKL" run "$BARK_DIR/preprocess.pkl" \
+"$PKL" run "$SCRIPTS_DIR/preprocess.pkl" \
   --output "$OUTPUT_DIR/projection-meta.pkl"
 
-"$PKL" run "$BARK_DIR/project.pkl" \
+"$PKL" run "$SCRIPTS_DIR/project.pkl" \
   --output "$OUTPUT_DIR/projection.pkl"
 
 "$PKL" eval "$OUTPUT_DIR/projection-meta.pkl" >/dev/null
 "$PKL" eval "$OUTPUT_DIR/projection.pkl" >/dev/null
 
-"$PKL" run "$BARK_DIR/postprocess.pkl" \
+"$PKL" run "$SCRIPTS_DIR/postprocess.pkl" \
   --output "$OUTPUT_DIR/postprocess-output.pcf"
 
 echo "Generated and validated projection, metadata, and postprocess artifacts."

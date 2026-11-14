@@ -1,4 +1,4 @@
-// Shared by every test case; the runner copies this into each case's working project,
+// Used by every test case instead of the default layout's PklProject; the runner copies it into each case's working project,
 // which lives at tests/.work/<case>/repo, hence the path back to the core.
 amends "pkl:Project"
 evaluatorSettings {
