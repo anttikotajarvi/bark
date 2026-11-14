@@ -1,0 +1,8 @@
+module Lot
+
+import "@bark/Manifest.pkl" as Manifest
+
+typealias PdfManifest = Manifest(target.contains(".pdf"))
+
+lotNum: Number
+receipt: PdfManifest

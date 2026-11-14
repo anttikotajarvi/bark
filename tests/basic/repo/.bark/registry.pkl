@@ -1,0 +1,12 @@
+amends "@bark/RegistryDeclaration.pkl"
+
+import "@bark/Meta.pkl" as Meta
+
+local schemas = new {
+  product = Meta.schema("schemas/Product.pkl")
+}
+
+graph =
+  Meta.Dir(new Meta.Children {
+    ["products"] = Meta.Table(schemas.product)
+  })

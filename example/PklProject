@@ -1,0 +1,10 @@
+// repo/PklProject
+amends "pkl:Project"
+evaluatorSettings {
+  modulePath {
+    "."
+  }
+}
+dependencies {
+  ["bark"] = import("../.core/PklProject")
+}

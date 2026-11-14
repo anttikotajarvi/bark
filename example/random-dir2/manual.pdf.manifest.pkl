@@ -1,0 +1,10 @@
+amends "@bark/Manifest.pkl"
+
+id = "018f4f55-0000-7000-9000-000000000201"
+target = "manual.pdf"
+description = "Equipment manual attached as a loose resource."
+
+tags {
+  ["kind"] = "manual"
+  ["audience"] = "operator"
+}

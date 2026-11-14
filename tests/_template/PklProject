@@ -1,0 +1,11 @@
+// Shared by every test case; the runner copies this into each case's working project,
+// which lives at tests/.work/<case>/repo, hence the path back to the core.
+amends "pkl:Project"
+evaluatorSettings {
+  modulePath {
+    "."
+  }
+}
+dependencies {
+  ["bark"] = import("../../../../.core/PklProject")
+}

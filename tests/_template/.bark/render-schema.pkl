@@ -1,0 +1,6 @@
+// Bark schema renderer entrypoint. Generated once by the core initializer; edit freely.
+extends "@bark/scripts/render-schema.pkl"
+
+import "context.pkl" as C
+
+ctx = C

@@ -1,0 +1,6 @@
+// Bark preprocess entrypoint. Generated once by the core initializer; edit freely.
+extends "@bark/scripts/preprocess.pkl"
+
+import "context.pkl" as C
+
+ctx = C

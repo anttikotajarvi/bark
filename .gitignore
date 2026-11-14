@@ -1,3 +1,4 @@
-.pkl-lsp  
+.pkl-lsp
 PklProject.deps.json
-.bark/output
+**/.bark/output/
+tests/.work/

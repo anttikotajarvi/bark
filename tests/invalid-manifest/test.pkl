@@ -1,0 +1,30 @@
+amends "pkl:test"
+
+import "repo/.bark/output/projection-meta.pkl" as Metadata
+
+local exitCode = (read?("prop:bark.testExitCode") ?? "1") as String
+local stdoutPath = (read?("prop:bark.testStdoutPath") ?? "") as String
+local stdoutText = if (stdoutPath == "") "" else read(stdoutPath).text
+
+facts {
+  ["generation carries preprocessing errors"] {
+    exitCode == "0"
+  }
+
+  ["manifest target details are preprocessing metadata"] {
+    Metadata.preprocessErrors.length == 1
+    Metadata.preprocessErrors[0].code == "MANIFEST_TARGET_MISSING"
+    Metadata.preprocessErrors[0].message.contains("Manifest target missing")
+    Metadata.preprocessErrors[0].message.contains("lots/L1/receipt.pdf.manifest.pkl")
+    Metadata.preprocessErrors[0].message.contains("lots/L1/receipt.pdf")
+  }
+
+  // Postprocess withholds its artifact when errors exist, so the aggregate
+  // failure is checked on its printed result.
+  ["postprocess reports one aggregate preprocessing failure"] {
+    stdoutText.contains("PREPROCESS_FAILED")
+    stdoutText.contains("1. MANIFEST_TARGET_MISSING")
+    stdoutText.contains("Manifest target missing")
+    stdoutText.contains("lots/L1/receipt.pdf.manifest.pkl")
+  }
+}

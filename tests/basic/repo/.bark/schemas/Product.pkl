@@ -1,0 +1,4 @@
+module Product
+id: String
+description: String
+stock_qty: Int

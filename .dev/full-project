@@ -3,55 +3,40 @@
 set -eu
 
 PKL=${PKL:-pkl}
-CORE_DIR=.bark/core
-GENERATED_DIR=$CORE_DIR/generated
-INCLUDE_PREFIX=
+BARK_DIR=.bark
+# Must match `outputDir` in .bark/context.pkl: generated imports are relative to it.
+OUTPUT_DIR=$BARK_DIR/output
 
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    --include-prefix)
-      if [ "$#" -lt 2 ]; then
-        echo "error: --include-prefix requires a value" >&2
-        exit 1
-      fi
-      INCLUDE_PREFIX=$2
-      shift 2
-      ;;
-    *)
-      echo "error: unknown argument: $1" >&2
-      exit 1
-      ;;
-  esac
-done
-
-if [ ! -f .bark/registry.pkl ] || [ ! -f PklProject ]; then
-  echo "error: run this script from the data repo root" >&2
-  echo "       expected .bark/registry.pkl and PklProject in the current directory" >&2
-  echo "       Bark scripts use --module-path ., so modulepath:/ resolves to this root" >&2
+if [ "$#" -gt 1 ]; then
+  echo "usage: .dev/full-project [data-repo-root]" >&2
   exit 1
 fi
 
-mkdir -p "$GENERATED_DIR"
+# Data repo root: a path relative to the working directory, defaulting to example/.
+ROOT=${1:-$(dirname "$0")/../example}
+cd "$ROOT"
 
-if [ -n "$INCLUDE_PREFIX" ]; then
-  export BARK_INCLUDE_PREFIX="$INCLUDE_PREFIX"
+if [ ! -f "$BARK_DIR/context.pkl" ] || [ ! -f PklProject ]; then
+  echo "error: $ROOT is not a bark data repo" >&2
+  echo "       expected $BARK_DIR/context.pkl and PklProject in it" >&2
+  exit 1
 fi
 
-"$PKL" run --module-path . "$CORE_DIR/scripts/render-schema.pkl" \
-  --output "$GENERATED_DIR/ProjectionSchema.pkl" \
-  --path-prefix modulepath:/.bark/
+mkdir -p "$OUTPUT_DIR"
 
-"$PKL" run --module-path . "$CORE_DIR/scripts/preprocess.pkl" \
-  --output "$GENERATED_DIR/projection-meta.pkl"
+"$PKL" run "$BARK_DIR/render-schema.pkl" \
+  --output "$OUTPUT_DIR/ProjectionSchema.pkl"
 
-"$PKL" run --module-path . "$CORE_DIR/scripts/project.pkl" \
-  --output "$GENERATED_DIR/projection.pkl" \
-  --path-prefix ../../../
+"$PKL" run "$BARK_DIR/preprocess.pkl" \
+  --output "$OUTPUT_DIR/projection-meta.pkl"
 
-"$PKL" eval --module-path . "$GENERATED_DIR/projection-meta.pkl" >/dev/null
-"$PKL" eval --module-path . "$GENERATED_DIR/projection.pkl" >/dev/null
+"$PKL" run "$BARK_DIR/project.pkl" \
+  --output "$OUTPUT_DIR/projection.pkl"
 
-"$PKL" run --module-path . "$CORE_DIR/scripts/postprocess.pkl" \
-  --output "$GENERATED_DIR/postprocess-output.pcf"
+"$PKL" eval "$OUTPUT_DIR/projection-meta.pkl" >/dev/null
+"$PKL" eval "$OUTPUT_DIR/projection.pkl" >/dev/null
+
+"$PKL" run "$BARK_DIR/postprocess.pkl" \
+  --output "$OUTPUT_DIR/postprocess-output.pcf"
 
 echo "Generated and validated projection, metadata, and postprocess artifacts."

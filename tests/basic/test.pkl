@@ -1,0 +1,32 @@
+amends "pkl:test"
+
+import "repo/.bark/output/projection.pkl" as Projection
+import "repo/.bark/output/projection-meta.pkl" as Metadata
+
+local exitCode = (read?("prop:bark.testExitCode") ?? "1") as String
+local stdoutPath = (read?("prop:bark.testStdoutPath") ?? "") as String
+local stdoutText = if (stdoutPath == "") "" else read(stdoutPath).text
+
+facts {
+  ["generation succeeds"] {
+    exitCode == "0"
+    stdoutText.contains("Generated and validated projection")
+  }
+
+  ["renders simple product table"] {
+    Projection.products.containsKey("SIMPLE")
+    Projection.products["SIMPLE"].id == "SIMPLE"
+    Projection.products["SIMPLE"].description == "Simple fixture product"
+    Projection.products["SIMPLE"].stock_qty == 3
+  }
+
+  ["only the case's shape is projected"] {
+    !Projection.hasProperty("company")
+    !Projection.hasProperty("lots")
+    !Projection.hasProperty("archive")
+  }
+
+  ["preprocessing finds no errors"] {
+    Metadata.preprocessErrors.isEmpty
+  }
+}

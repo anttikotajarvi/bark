@@ -1,0 +1,12 @@
+amends "@bark/RegistryDeclaration.pkl"
+
+import "@bark/Meta.pkl" as Meta
+
+local schemas = new {
+  lot = Meta.schema("schemas/Lot.pkl")
+}
+
+graph =
+  Meta.Dir(new Meta.Children {
+    ["lots"] = Meta.Collection(Meta.Index(schemas.lot))
+  })
