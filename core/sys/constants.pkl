@@ -1,7 +1,6 @@
 module Constants
 
 const BARK_DIRNAME = ".bark"
-const BUNDLE_DIRNAME = "bundle"
 
 const PKL_EXTENSION = ".pkl"
 const INDEX_NAME = "index"
