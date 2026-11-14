@@ -7,5 +7,5 @@ evaluatorSettings {
   }
 }
 dependencies {
-  ["bark"] = import("../../../../.core/PklProject")
+  ["bark"] = import("../../../../core/PklProject")
 }
