@@ -24,11 +24,10 @@ const function expectedTargetName(localPath: String): String =
   localPath.split("/").last.replaceLast(CFG.MANIFEST_SUFFIX, "")
 
 function build(
-  rootPath: String,
   imports: Mapping<String, Any>,
   targetExists: TargetExists,
 ): BuildResult =
-  let (records = buildRecords(rootPath, imports))
+  let (records = buildRecords(imports))
   let (dupes = duplicateIds(records))
     new BuildResult {
       // A duplicate id has no unambiguous index entry. Excluding every record
@@ -66,15 +65,16 @@ local function targetPath(localPath: String, target: String): String =
   let (parent = parentPath(localPath))
     if (parent == "") target else "\(parent)/\(target)"
 
-local function buildRecords(rootPath: String, imports: Mapping<String, Any>): List<ManifestRecord> =
+local function buildRecords(imports: Mapping<String, Any>): List<ManifestRecord> =
   let (
     manifestImports =
       new Listing<ManifestImport> {
-        for (path in imports.keys) {
+        // Only manifest sidecars matter; values of other imports stay unevaluated.
+        for (path in imports.keys.filter((k) -> k.endsWith(CFG.MANIFEST_SUFFIX))) {
           for (
             scoped in
               PathScope
-                .scopedPaths(rootPath, path)
+                .scopedPaths(path)
                 .filter((p) -> PathScope.keepUserLocalPath(p.localPath))
           ) {
             new ManifestImport {

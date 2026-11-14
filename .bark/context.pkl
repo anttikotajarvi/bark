@@ -3,7 +3,7 @@
 amends "@bark/Context.pkl"
 
 // Every Pkl file in the data repo. Narrow this glob to scope what bark can see.
-imports = import*("../**.pkl")
+imports = rooted(import*("../**.pkl"), "../")
 
 graph = import("registry.pkl").graph
 

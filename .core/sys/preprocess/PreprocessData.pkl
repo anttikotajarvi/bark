@@ -1,7 +1,11 @@
 open module bark.preprocess.PreprocessData
 
+import "../../Context.pkl" as Context
 import "../Errors.pkl" as Errors
 import "ManifestIndex.pkl" as ManifestIndex
+
+/// Input slot, set by the amender (scripts/preprocess.pkl).
+hidden ctx: Context
 
 manifestIndex: ManifestIndex.ManifestIndex
 directoryPaths: List<List<String>>

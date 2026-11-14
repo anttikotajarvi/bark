@@ -18,7 +18,7 @@ local allImports = import*("../../../**.pkl")
 
 local entries = new Listing<EntryTree.Entry> {
   for (path in allImports.keys) {
-    for (scoped in PathScope.scopedPaths(ROOT_PATH, path).filter((p) -> PathScope.keepProjectLocalPath(p.localPath))) {
+    for (scoped in PathScope.scopedPaths(path.replaceFirst(ROOT_PATH, "")).filter((p) -> PathScope.keepProjectLocalPath(p.localPath))) {
       new EntryTree.Entry {
         localPath = scoped.localPath
         importPath = scoped.physicalLocalPath
@@ -54,7 +54,6 @@ local generatedHeader =
   // Arguments:
   //   --output=\(options.output ?? "<stdout>")
   //   --path-prefix=\(PATH_PREFIX)
-  //   \(CFG.INCLUDE_PREFIX_ENV_VAR)=\(CFG.INCLUDE_PREFIX)
   """.trim()
 
 local rendered =

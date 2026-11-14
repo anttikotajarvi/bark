@@ -8,41 +8,26 @@ class ScopedPath {
   localPath: String
 }
 
-function scopedPath(
-  rootPath: String,
-  importPath: String
-): ScopedPath? =
-  let (physical = importPath.replaceFirst(rootPath, ""))
+function scopedPath(importPath: String): ScopedPath? =
+  let (physical = importPath)
     if (!inScope(physical))
       null
     else
       new ScopedPath {
         importPath = importPath
         physicalLocalPath = physical
-        localPath = stripIncludePrefix(physical)
+        localPath = physical
       }
 
-function scopedPaths(
-  rootPath: String,
-  importPath: String
-): List<ScopedPath> =
-  let (scoped = scopedPath(rootPath, importPath))
+function scopedPaths(importPath: String): List<ScopedPath> =
+  let (scoped = scopedPath(importPath))
     if (scoped == null)
       List()
     else
       List(scoped)
 
-function physicalPath(
-  rootPath: String,
-  logicalPath: String
-): String =
-  "\(rootPath)\(INCLUDE_PREFIX)\(logicalPath)"
-
-function physicalPathFromSegments(
-  rootPath: String,
-  path: List<String>
-): String =
-  physicalPath(rootPath, path.join("/"))
+function physicalPathFromSegments(path: List<String>): String =
+  path.join("/")
 
 function keepUserLocalPath(path: String): Boolean =
   !hasBarkSegment(path)
@@ -57,45 +42,15 @@ function keepDirectoryChild(
   name: String
 ): Boolean =
   name != CFG.BARK_DIRNAME &&
-    !(INCLUDE_PREFIX == "" && path.isEmpty && name == CFG.TEST_FIXTURES_DIR)
+    !(path.isEmpty && name == CFG.TEST_FIXTURES_DIR)
 
-// Prefix normalization is owned configuration policy. It is deliberately not
-// an amendment hook for the physical/logical path operations above.
-local INCLUDE_PREFIX = normalizePrefix(CFG.INCLUDE_PREFIX)
-
-local function normalizePrefix(prefix: String): String =
-  let (stripped = stripDotSlash(prefix.trim()))
-    if (stripped == "" || stripped == ".")
-      ""
-    else if (stripped.startsWith("/"))
-      throw("\(CFG.INCLUDE_PREFIX_ENV_VAR) must be relative to the data repo root: \(prefix)")
-    else if (stripped.endsWith("/"))
-      stripped
-    else
-      "\(stripped)/"
-
-local function inScope(path: String): Boolean =
-  if (INCLUDE_PREFIX == "")
-    !isTestFixturePath(path)
-  else
-    path.startsWith(INCLUDE_PREFIX)
+// Temporary: fixtures are excluded here until scoping moves into .bark/context.pkl.
+local function inScope(path: String): Boolean = !isTestFixturePath(path)
 
 local function isTestFixturePath(path: String): Boolean =
   path == CFG.TEST_FIXTURES_DIR || path.startsWith("\(CFG.TEST_FIXTURES_DIR)/")
-
-local function stripIncludePrefix(path: String): String =
-  if (INCLUDE_PREFIX == "")
-    path
-  else
-    path.replaceFirst(INCLUDE_PREFIX, "")
 
 local function hasBarkSegment(path: String): Boolean =
   path == CFG.BARK_DIRNAME ||
     path.startsWith("\(CFG.BARK_DIRNAME)/") ||
     path.contains("/\(CFG.BARK_DIRNAME)/")
-
-local function stripDotSlash(path: String): String =
-  if (path.startsWith("./"))
-    stripDotSlash(path.replaceFirst("./", ""))
-  else
-    path

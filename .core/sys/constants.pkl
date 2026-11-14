@@ -14,6 +14,3 @@ const INDEX_SCHEMA_FILENAME = "index-schema.pkl"
 const MANIFEST_SUFFIX = ".manifest.pkl"
 const BARK_MARKER_FIELD = "__bark"
 const MANIFEST_MARKER = "manifest"
-
-const INCLUDE_PREFIX_ENV_VAR = "BARK_INCLUDE_PREFIX"
-const INCLUDE_PREFIX = (read?("env:\(INCLUDE_PREFIX_ENV_VAR)") ?? "") as String
