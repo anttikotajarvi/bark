@@ -1,13 +1,17 @@
-module bark.scripts.Preprocess
+open module bark.scripts.Preprocess
 
 extends "pkl:Command"
 
-import "../sys/constants.pkl" as CFG
-import "../sys/Errors.pkl" as Errors
 import "preprocess-data.pkl" as Data
 
-local const PREPROCESS_SCHEMA_PATH = "modulepath:/.bark/core/sys/preprocess/PreprocessData.pkl"
-local const ERRORS_PATH = "modulepath:/.bark/core/sys/Errors.pkl"
+
+import "../sys/constants.pkl" as CFG
+import "../sys/Errors.pkl" as Errors
+import "../sys/preprocess/PreprocessData.pkl" as PreprocessData
+
+import "pkl:reflect"
+local PREPROCESS_SCHEMA_PATH = reflect.Module(PreprocessData).uri
+local ERRORS_PATH = reflect.Module(Errors).uri
 
 options: Options
 

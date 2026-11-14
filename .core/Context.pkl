@@ -1,0 +1,15 @@
+/// The inputs bark needs from a data repo: its graph, the files it can see,
+/// and a way to read them. Users amend this once in `.bark/context.pkl`.
+/// Holds inputs only; computed results belong to the script data modules.
+module bark.Context
+
+import "Meta.pkl" as Meta
+
+/// The registry graph describing the data repo layout.
+graph: Meta.Graph
+
+/// Pkl files in the data repo, keyed by path. Values are lazy; bark filters on keys.
+imports: Mapping<String, Any>
+
+/// Reads a file at a path relative to the data repo root; null if it does not exist.
+readFile: (String) -> Resource?
