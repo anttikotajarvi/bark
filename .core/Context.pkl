@@ -1,9 +1,13 @@
-/// The inputs bark needs from a data repo: its graph, the files it can see,
-/// and a way to read them. Users amend this once in `.bark/context.pkl`.
-/// Holds inputs only; computed results belong to the script data modules.
+/// What bark needs from a data repo: its graph, the files it can see, a way to
+/// read them, configuration for generated output, and helpers that turn these
+/// into paths. Users amend this once in `.bark/context.pkl`.
+/// Computed results belong to the script data modules.
 module bark.Context
 
+import "pkl:reflect"
 import "Meta.pkl" as Meta
+// Imports itself so the core root can be derived from this module's own location.
+import "Context.pkl" as Self
 
 /// The registry graph describing the data repo layout.
 graph: Meta.Graph
@@ -15,6 +19,18 @@ imports: Mapping<String, Any>
 
 /// Reads a file at a path relative to the data repo root; null if it does not exist.
 readFile: (String) -> Resource?
+
+/// Prefix generated source uses to refer to core modules, including the trailing
+/// separator (e.g. "@bark/" or "modulepath:/.core/"). Defaults to the location the
+/// core was actually loaded from, which also pins its exact version.
+/// Overrides are not checked here: an address that does not resolve (such as an
+/// "@name/" the project does not declare as a dependency) only fails when a
+/// generated file is evaluated.
+coreRoot: String = reflect.Module(Self).uri.replaceLast("Context.pkl", "")
+
+/// Import string for a core module; `path` is relative to the core root
+/// (e.g. "sys/Generic.pkl").
+function coreImport(path: String): String = "\(coreRoot)\(path)"
 
 /// Directory generated files are written to, relative to the data repo root.
 /// Generated imports are written relative to it, so it must match where the

@@ -4,11 +4,10 @@ extends "pkl:Command"
 
 import "../Context.pkl" as Context
 import "preprocess-data.pkl" as Data
-import "pkl:reflect"
 import "../sys/Errors.pkl" as Errors
-import "../sys/preprocess/PreprocessData.pkl" as PreprocessData
-local PREPROCESS_SCHEMA_PATH = reflect.Module(PreprocessData).uri
-local ERRORS_PATH = reflect.Module(Errors).uri
+
+local PREPROCESS_SCHEMA_PATH = ctx.coreImport("sys/preprocess/PreprocessData.pkl")
+local ERRORS_PATH = ctx.coreImport("sys/Errors.pkl")
 
 /// Bark context supplied by the entry point (.bark/preprocess.pkl).
 ctx: Context

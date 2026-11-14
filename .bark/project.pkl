@@ -1,0 +1,9 @@
+// Bark projection entrypoint. Generated once by the core initializer; edit freely.
+extends "@bark/scripts/project.pkl"
+
+import "context.pkl" as C
+
+ctx = C
+
+// Output of preprocess. Keep this path in sync with `outputDir` in context.pkl.
+metadata = import("output/projection-meta.pkl")
