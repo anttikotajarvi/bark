@@ -1,6 +1,6 @@
 module Lot
 
-import "modulepath:/.bark/core/Manifest.pkl" as Manifest
+import "@bark/Manifest.pkl" as Manifest
 
 typealias PdfManifest = Manifest(target.contains(".pdf"))
 

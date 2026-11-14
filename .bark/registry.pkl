@@ -1,5 +1,5 @@
-amends "core/RegistryDeclaration.pkl" // Required amendment
-import "core/Meta.pkl" as Meta
+amends "@bark/RegistryDeclaration.pkl" // Required amendment
+import "@bark/Meta.pkl" as Meta
 
 local selectedRegistry = (read?("env:BARK_TEST_REGISTRY") ?? "default") as String
 local fixtureRegistries = import*("../.test-fixtures/*/.bark-test/registry.pkl")
