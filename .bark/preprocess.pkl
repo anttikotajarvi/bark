@@ -1,0 +1,10 @@
+// Bark preprocess entrypoint. Generated once by the core initializer; edit freely.
+// Globs and `read` resolve relative to this file, which is why they live here.
+extends "core/scripts/preprocess.pkl"
+
+import "registry.pkl" as Registry
+import "imports.pkl" as I
+
+graph = Registry.graph
+imports = I.imports
+readFile = (path) -> read?("../\(path)")

@@ -1,0 +1,3 @@
+// Every Pkl file in the data repo, shared by all bark entrypoints.
+// Narrow this glob to scope what bark can see. Values are lazy; the core filters on keys.
+imports = import*("../**.pkl")
