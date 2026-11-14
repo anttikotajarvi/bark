@@ -2,9 +2,23 @@
 
 This is a working decision log, not polished user documentation. It records the small semantic choices and emergent behavior discovered while building the current projection pipeline.
 
+## Repository layout
+
+```text
+core/        the bark package, consumed as `@bark/...`; its own PklProject
+core/template/   the default layout of a data repo, written by init
+core/init.pkl    initializer (see Initialization)
+example/     a data repo that depends on ../core; the playground
+tests/       one self-contained project per case, see Tests
+.dev/        shell wrappers: full-project, test
+.github/     release workflow
+```
+
+The core is a Pkl package, and its source lives here as a local project dependency (`["bark"] = import("../core/PklProject")`). Everything inside the core refers to its own files with relative imports, which resolve inside the package.
+
 ## Current pipeline
 
-1. Read the graph from `repo/.bark/registry.pkl`.
+1. Read the graph from `.bark/registry.pkl`, through the context.
 2. Render `ProjectionSchema.pkl` from the graph.
 3. Collect static graph paths and expand observed collection children.
 4. Check which required directories are missing and record those findings in projection metadata.
@@ -14,51 +28,86 @@ This is a working decision log, not polished user documentation. It records the 
 8. Evaluate `projection.pkl` against `ProjectionSchema.pkl`.
 9. Run postprocess coherence checks and produce the final projection, metadata, and result envelope.
 
-From `repo/`, the whole flow is:
+From the repository root, the whole flow on the example data repo is:
 
 ```sh
-./.dev/full-project
+./.dev/full-project            # runs on example/
+./.dev/full-project path/to/repo
 ```
 
-For development throughput tests, run:
+The wrapper runs the four stubs in `.bark/scripts/` in order (`render-schema`, `preprocess`, `project`, `postprocess`), evaluating the generated metadata and projection in between. Artifacts land in `.bark/output/`. The wrapper exits 0 even when postprocess withholds its artifact because of validation errors, in which case it prints the result and writes no `postprocess-output.pcf`.
+
+## Tests
 
 ```sh
-./.dev/test
+./.dev/test            # all cases
 ./.dev/test basic
 ```
 
-To generate and inspect the projection artifacts for a single fixture, run:
-
-```sh
-./.dev/full-fixture basic
-```
-
-This runs the complete projection pipeline and leaves the selected fixture's
-artifacts under `.bark/core/generated/`.
-
-Each fixture is a small dev-only package under `.test-fixtures/<name>/`:
+Each case under `tests/<case>/` is its own bark project:
 
 ```text
-.test-fixtures/<name>/repo/        # data repo subtree passed as include prefix
-.test-fixtures/<name>/.bark-test/  # fixture registry and pkl:test assertions
+tests/<case>/repo/      the case's registry, schemas and data files
+tests/<case>/test.pkl   pkl:test assertions, outside repo/ so the import glob never sees it
+tests/_template/PklProject   dependency on the local core, used instead of the default PklProject
 ```
 
-The root `.bark/registry.pkl` reads `BARK_TEST_REGISTRY` for this development
-repo's tests and delegates to a fixture registry when the test runner sets it.
-This is project-local test wiring, not Bark core behavior.
+The runner builds `tests/.work/<case>/repo` (gitignored) from `core/template`, the template `PklProject` and the case's `repo/`, runs the full pipeline there, and runs `test.pkl` with the exit code and the captured output as `-p bark.test*` properties. The cases therefore exercise the shipped stubs, not copies.
 
-To scope generation to a physical subtree while keeping projected paths relative
-to that subtree, pass an include prefix through the dev wrapper:
+## Data repo layout
+
+```text
+PklProject                 depends on bark, sets the module path to "."
+.bark/context.pkl          glob, graph, readFile and config for this repo
+.bark/registry.pkl         the graph
+.bark/schemas/             schemas the graph refers to (paths are relative to .bark/)
+.bark/scripts/*.pkl        entry stubs: preprocess, render-schema, project, postprocess
+.bark/output/              generated artifacts (gitignored)
+```
+
+`registry.pkl` sits at the root of `.bark/`; schema paths in the graph are relative to it. `.bark/` is bark-managed content inside the data repo root and is never projected.
+
+## Context and config
+
+`Context` is what the entry points need from a data repo: `graph`, `imports`, `readFile` and a nested `config`. Any module that amends `Context` can be passed to an entry point; `.bark/context.pkl` is just the usual place to define one.
+
+- `imports` holds the Pkl files bark may see, with keys relative to the data repo root. The glob lives in `.bark/context.pkl` because globs and `read` resolve relative to the file that contains them. Build it with `rooted(import*("../**.pkl"), "../")`, which strips the glob's prefix; `without(imports, dirs)` drops directories. Values stay lazy.
+- `readFile` reads a path relative to the data repo root and returns null if it does not exist.
+- `config` (`Config.pkl`) holds settings with defaults, overridden in a `config { ... }` block:
+  - `assumedOutputDir` (default `.bark/output`) is where generated files are assumed to be. Bark does not write them there itself; the invoker places them. The setting exists so the imports written into generated files line up.
+  - `coreRoot` is the prefix generated source uses for core modules. It defaults to where the core was loaded from (pinning the exact version); this repo sets `@bark/`. An override that does not resolve only fails when a generated file is evaluated.
+  - `omittedFilenames` lists file names left out of the projection.
+  - `importPathFromOutput(target)` turns a repo-relative path into the import string a file in `assumedOutputDir` needs; shared leading directories cancel out (`.bark/schemas/A.pkl` from `.bark/output` is `../schemas/A.pkl`).
+
+## Entry points
+
+Each stub in `.bark/scripts/` extends a core script and supplies its inputs:
+
+- `preprocess`, `render-schema` and `project` take `ctx` (a `Context`).
+- `project` also takes `metadata`, the evaluated `projection-meta.pkl` that preprocess wrote, as an `import()` of `../output/projection-meta.pkl`.
+- `postprocess` takes no `ctx`. It takes `metadata` and `projection`, imported from `../output/`.
+
+The import paths in the stubs must agree with `config.assumedOutputDir`; `import()` needs a literal, so they cannot be derived. The stubs are plumbing and not meant to be edited. How the data reaches a stage is the caller's choice; the core only declares the slots.
+
+Preprocess writes its findings as generated Pkl (`projection-meta.pkl`) rather than computing them again later. The findings, including the filesystem reads behind them, are frozen as data, and errors travel as values and not as Pkl failures.
+
+## Initialization
+
+`core/init.pkl` writes the default layout into the working directory: every file under `core/template/` plus a generated `PklProject`. A file that already exists is skipped and reported; to reset a file, delete it and run init again. There is no force flag.
 
 ```sh
-./.dev/full-project --include-prefix .test-fixtures/basic/repo/
+pkl run package://github.com/anttikotajarvi/bark/releases/download/v0.1.0/bark-core@0.1.0#/init.pkl
+pkl project resolve
 ```
 
-The script interface is rooted at the data repository directory. Run it from
-`repo/`, and run Pkl with `--module-path .`; under this contract,
-`modulepath:/` resolves to the data repo root. The `.bark/` directory is
-Bark-managed content inside that root. It may be managed separately, such as as
-a submodule, but the containing data repo root remains the command boundary.
+- `PklProject` is generated in code, not templated: init imports the core's own `PklProject` and reads `package.uri`, so the dependency always names the version init came from. The dependency alias is `bark`, which the template stubs assume.
+- The template is static and versioned with the package. Init globs `template/**`, drops directory entries, and maps each path to its target.
+- Existence checks read `file://$PWD/...` while Pkl writes relative to the real working directory. Callers must keep `PWD` correct; a spawned process that sets only its working directory can make init skip a file that is missing.
+- An existing `PklProject` is skipped without telling the user what dependency to add.
+
+## Packaging and release
+
+`core/PklProject` is the package definition. A `v*` tag runs `.github/workflows/release.yml`, which checks that the tag matches `package.version`, runs `pkl project package core`, and publishes the zip and metadata as release assets. `baseUri` is built so that `package://github.com/...` resolves to those asset URLs.
 
 ## Failure policy
 
@@ -124,10 +173,9 @@ If `products/` itself is missing, metadata contains the shared missing-directory
   - If other entries arrive first, `index.pkl` replaces their directory mapping.
   - If `index.pkl` arrives first, later descendants are ignored.
 - Duplicate leaves and file/directory collisions reject the incoming entry and preserve the original tree.
-- Schema files and index-schema files are excluded from projected entries.
-- Files under `.bark/` are excluded from the user entry tree.
-- Files under `.test-fixtures/` are excluded by default unless an include prefix
-  explicitly points inside that tree.
+- Files under `.bark/` are never projected or scanned for manifests.
+- Files named in `config.omittedFilenames` (by default `schema.pkl` and `index-schema.pkl`) are left out of projected entries, in any directory.
+- Which files bark can see at all is decided in `.bark/context.pkl` (see Context and config).
 - Pkl forbids recursive type aliases, so `ENode` uses `Mapping<String, Any>` and the entry-tree functions maintain the recursive invariant.
 
 ## Directory validation
@@ -154,28 +202,13 @@ If `products/` itself is missing, metadata contains the shared missing-directory
 
 ## Paths and command interfaces
 
-- Both generators are Pkl commands with `--output` and `--path-prefix` options.
-- Projection imports are rendered as `PATH_PREFIX + entry.importPath`; normally
-  this equals the logical local path, but include-prefix runs keep imports
-  physical while stripping the prefix from projected keys.
-- Schema import prefixes apply to graph-declared user schemas; Bark's internal `Generic.pkl` import remains relative.
-- Generated files include a do-not-edit comment and the effective generator arguments.
-- Commands are designed to run from the data repo root, `repo/`, with `--module-path .`.
-- Under that contract, `modulepath:/` resolves to the data repo root, so Bark imports keep the form `modulepath:/.bark/core/...` and `modulepath:/.bark/schemas/...`.
-- `.bark/` is Bark-managed content inside the data repo root. It may be a submodule or separately managed directory, but the script interface is anchored at the containing data repo root.
-- `ROOT_PATH = "../../../"` is the path from `.bark/core/scripts` back to the data repo root.
-- The static `import*("../../../**.pkl")` glob scans the data repo root; shared
-  path filtering excludes `.bark/`, excludes `.test-fixtures/` by default, and
-  applies `BARK_INCLUDE_PREFIX` when present.
-- `BARK_INCLUDE_PREFIX` scopes Pkl file discovery, manifest discovery, and
-  directory shape filesystem reads. Bark reads it through the shared constants
-  module, and `PathScope.pkl` applies it directly. It does not change registry
-  loading.
-- `.dev/full-project --include-prefix` is development wrapper sugar for setting
-  `BARK_INCLUDE_PREFIX`.
-- When running preprocessing and projection as separate commands, give both
-  processes the same `BARK_INCLUDE_PREFIX`; the wrapper does this automatically.
-- The shell wrapper supports overriding the Pkl executable through `PKL`.
+- The four generators are Pkl commands with an `--output` option; the entry stubs supply their inputs.
+- Generated files include a do-not-edit comment, the effective arguments, and a note that their imports are relative to the assumed output directory and not portable.
+- Imports of user files in `projection.pkl` and of schemas in `ProjectionSchema.pkl` are computed with `config.importPathFromOutput`, so they resolve from `assumedOutputDir`. `projection.pkl` extends the sibling `ProjectionSchema.pkl`, so both must be written to the same directory under those names.
+- Generated references to the core (`Generic.pkl`, `PreprocessData.pkl`, `Errors.pkl`) use `config.coreImport`, i.e. `coreRoot` plus a path inside the package.
+- Commands run from the data repo root, where the `PklProject` is. They need the project for `@bark` to resolve; there is no `--module-path` requirement beyond the project's `modulePath = "."`, which data files use for `modulepath:/.bark/schemas/...` amends.
+- Schemas are deduplicated by the resource they resolve to, read through `ctx.readFile` at `.bark/<schema path>`. A missing schema file therefore fails when the schema is rendered, not when the generated file is evaluated.
+- Pkl commands cannot orchestrate other processes, so the multi-step generate-and-evaluate workflow uses a small POSIX shell script. It accepts a different Pkl executable through `PKL`.
 
 ## Pkl behavior that affected the design
 
@@ -184,16 +217,22 @@ If `products/` itself is missing, metadata contains the shared missing-directory
 - Empty collection entries are interpreted by their entry-node type: an empty table may be valid, while an empty index fails validation.
 - `open class` permits extension through subclasses; it does not make arbitrary properties valid on a base-class object literal by itself.
 - Pkl commands cannot orchestrate other processes, so the multi-step generate-and-evaluate workflow uses a small POSIX shell script.
+- `import*` loads every matched module. A module whose type annotations import something unresolvable fails to load, and that fails the whole glob; an ordinary failing value (`x = throw(...)`) stays lazy. A stray unloadable Pkl file in a data repo therefore breaks every stage.
+- A module that amends another cannot declare a typed property. Input slots (`ctx`, the postprocess slots) are therefore declared in the template module (`PreprocessData`, `PostprocessData`) and marked `hidden`, so they never render.
+- A property holding a function has to be called with `.apply(...)`; `readFile(x)` does not resolve.
+- An `import()` expression is lazy. Postprocess relies on this to avoid reading the projection when preprocessing already failed, and keeps its `projection` slot typed `Any` so assigning it does not load the module.
+- By default `pkl project package` excludes every dotfile and every file named `PklProject`, at any depth. `core/PklProject` overrides `exclude` so `template/.bark/.gitignore` ships. An `exclude { ... }` block would add to the defaults; the override uses `exclude = new Listing { ... }`.
+- Pkl caches packages by URI. Changing a published version's contents without bumping the version leaves consumers with the cached copy.
 
 ## Current generated artifacts
 
-The wrapper writes:
+The wrapper writes, under `.bark/output/`:
 
 ```text
-repo/.bark/core/generated/ProjectionSchema.pkl
-repo/.bark/core/generated/projection.pkl
-repo/.bark/core/generated/projection-meta.pkl
-repo/.bark/core/generated/postprocess-output.pcf
+ProjectionSchema.pkl
+projection.pkl
+projection-meta.pkl
+postprocess-output.pcf     only when postprocess reports no errors (or with --force)
 ```
 
 These are generated artifacts. The source of truth is the graph, the user files, and the generator implementation.
