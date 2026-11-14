@@ -2,9 +2,11 @@
 amends "pkl:Project"
 package {
   name = "bark-core"
-  baseUri = "package://example.com/bark-core"
   version = "0.1.0"
-  packageZipUrl = "https://example.com/bark-core@\(version).zip"
+  // Hosted as GitHub release assets: package://X/Y@V is fetched from https://X/Y@V,
+  // so metadata and zip both live under the release's download URL.
+  baseUri = "package://github.com/anttikotajarvi/bark/releases/download/v\(version)/bark-core"
+  packageZipUrl = "https://github.com/anttikotajarvi/bark/releases/download/v\(version)/bark-core@\(version).zip"
   // The default also excludes every dotfile, which would drop template/.bark/.gitignore,
   // and PklProject, which init imports to read the package URI.
   exclude = new Listing {
