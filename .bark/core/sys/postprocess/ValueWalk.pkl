@@ -9,6 +9,8 @@ function isObjectLike(value: Any): Boolean =
   !(value is Map) &&
   !(value is Mapping) &&
   !(value is List) &&
+  !(value is Listing) &&
+  !(value is Set) &&
   !isLeafClass(value.getClass().simpleName)
 
 function walk(value: Any, path: String): List<ValueRef> =
@@ -37,6 +39,22 @@ function walk(value: Any, path: String): List<ValueRef> =
     else if (value is List)
       own + new Listing<ValueRef> {
         for (index, child in value) {
+          for (ref in walk(child, "\(path)[\(index)]")) {
+            ref
+          }
+        }
+      }.toList()
+    else if (value is Listing)
+      own + new Listing<ValueRef> {
+        for (index, child in value.toList()) {
+          for (ref in walk(child, "\(path)[\(index)]")) {
+            ref
+          }
+        }
+      }.toList()
+    else if (value is Set)
+      own + new Listing<ValueRef> {
+        for (index, child in value.toList()) {
           for (ref in walk(child, "\(path)[\(index)]")) {
             ref
           }
