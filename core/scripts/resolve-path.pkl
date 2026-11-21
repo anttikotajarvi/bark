@@ -1,0 +1,29 @@
+
+open module bark.scripts.ResolvePath
+
+extends "pkl:Command"
+
+import "../Context.pkl" as Context
+import "../sys/io/PathResolver.pkl" as PathResolver
+
+/// Bark context supplied by the project entrypoint.
+ctx: Context
+
+options: Options
+
+class Options {
+  /// Logical path relative to the data repository root.
+  @Flag {
+    completionCandidates = "paths"
+  }
+  query: String
+}
+
+local resolved = PathResolver.resolvePath(ctx.graph, options.query)
+
+output {
+  text = new JsonRenderer {}.renderDocument(new Dynamic {
+    query = options.query
+    result = resolved
+  })
+}

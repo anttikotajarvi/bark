@@ -5,8 +5,10 @@ class Schema {
   path: G.SchemaPath
 }
 
+typealias NodeType = "dir-node" | "index-node" | "collection-node" | "table-node"
+
 abstract class AnyNode {
-  fixed type: String
+  fixed type: NodeType
 }
 
 typealias Children = Mapping<G.PosixDirName, AnyNode>
@@ -32,3 +34,22 @@ class IndexNode extends AnyNode {
   _schema: Schema
   _nodes: Children = new Children {}
 }
+
+/// The graph declaration at the given path segments, or null if the graph declares none.
+/// Table entries are not nodes, so they yield null; see `io/PathResolver.pkl`.
+function getNode(graph: AnyNode, segments: List<String>): AnyNode? =
+  if (segments.isEmpty)
+    graph
+  else if (graph is CollectionNode)
+    getNode(graph._entryNode, segments.drop(1))
+  else if (graph is DirNode)
+    getChild(graph._nodes, segments)
+  else if (graph is IndexNode)
+    getChild(graph._nodes, segments)
+  else
+    null
+
+local function getChild(children: Children, segments: List<String>): AnyNode? =
+  let (child = children.getOrNull(segments.first))
+    if (child == null) null
+    else getNode(child, segments.drop(1))

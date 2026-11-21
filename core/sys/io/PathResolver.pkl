@@ -1,0 +1,97 @@
+module bark.io.PathResolver
+
+import "../GraphModel.pkl" as GM
+
+/// How a logical path relates to the graph. Stable: node types and entry types are
+/// read from `node.type` and `ownerType`, not encoded here.
+///   node  - the graph declares a node at this path
+///   entry - an element of a table or collection
+///   loose - the graph declares nothing at this path
+typealias ResolutionKind = "node" | "entry" | "loose"
+
+/// What a logical path resolves to, as reported to users and the CLI.
+abstract class Resolution {
+  fixed kind: ResolutionKind
+
+  /// The requested path.
+  path: String
+
+  /// Last path segment; null for the graph root.
+  name: String?
+
+  /// The schema the value at this path must follow; null when none applies
+  /// (dirs, tables and collections themselves, and loose paths).
+  schema: GM.Schema?
+}
+
+class NodeResolution extends Resolution {
+  fixed kind = "node"
+  node: GM.AnyNode
+}
+
+class EntryResolution extends Resolution {
+  fixed kind = "entry"
+
+  /// Type of the node holding the entry: its table or collection.
+  ownerType: "table-node" | "collection-node"
+}
+
+class LooseResolution extends Resolution {
+  fixed kind = "loose"
+
+  /// Type of the parent, if it is a declared node; null otherwise.
+  ownerType: GM.NodeType?
+}
+
+/// Resolve a logical path (e.g. "lots/L1") against the registry graph.
+/// The path does not need to exist on disk.
+function resolvePath(graph: GM.AnyNode, path: String): Resolution =
+  let (segments = pathSegments(path))
+  let (found = GM.getNode(graph, segments))
+  let (parent = if (segments.isEmpty) null else GM.getNode(graph, segments.dropLast(1)))
+  let (requested = path)
+  let (leaf = if (segments.isEmpty) null else segments.last)
+    if (parent is GM.CollectionNode && found != null)
+      new EntryResolution {
+        path = requested
+        name = leaf
+        ownerType = parent.type
+        schema = schemaOf(found)
+      }
+    else if (parent is GM.TableNode)
+      new EntryResolution {
+        path = requested
+        name = leaf
+        ownerType = parent.type
+        schema = parent._schema
+      }
+    else if (found != null)
+      new NodeResolution {
+        path = requested
+        name = leaf
+        node = found
+        schema = schemaOf(found)
+      }
+    else
+      new LooseResolution {
+        path = requested
+        name = leaf
+        ownerType = parent?.type
+      }
+
+local function schemaOf(node: GM.AnyNode): GM.Schema? =
+  if (node is GM.IndexNode) node._schema else null
+
+local function pathSegments(path: String): List<String> =
+  if (path.isEmpty || path == ".")
+    List()
+  else
+    let (parts = path.split("/"))
+      if (
+        path.startsWith("/") ||
+        path.contains("\\") ||
+        parts.any((p) -> p.isEmpty || p == "." || p == "..")
+      )
+        throw("Invalid graph path: '\(path)'")
+      else
+        parts

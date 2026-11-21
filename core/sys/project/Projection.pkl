@@ -35,7 +35,7 @@ local function indentBlock(text: String, spaces: Int): String =
       .join("\n")
 
 local function getNode(graph: Sys.AnyNode, path: List<String>): Sys.AnyNode? =
-  getChildNode(graph, path)
+  Sys.getNode(graph, path)
 
 local function importEntry(entry: EntryTree.Entry): String =
   "import(\"\(entry.importPath)\")"
@@ -137,26 +137,3 @@ local function renderMembers(
       if (acc.expr == "") member.expr
       else "\(acc.expr)\n\(member.expr)"
   })
-
-local function getChildNode(
-  curNode: Sys.AnyNode,
-  path: List<String>
-): Sys.AnyNode? =
-  if (path.isEmpty)
-    curNode
-  else if (curNode is Sys.CollectionNode)
-    getChildNode(curNode._entryNode, path.drop(1))
-  else if (curNode is Sys.DirNode)
-    let (child = curNode._nodes.getOrNull(path.first))
-      if (child == null)
-        null
-      else
-        getChildNode(child, path.drop(1))
-  else if (curNode is Sys.IndexNode)
-    let (child = curNode._nodes.getOrNull(path.first))
-      if (child == null)
-        null
-      else
-        getChildNode(child, path.drop(1))
-  else
-    null
