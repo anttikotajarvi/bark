@@ -1,0 +1,8 @@
+module bark.extensions.Initializer
+
+extends "Extension.pkl"
+
+// Exact type still to be decided.
+targetKind: String?
+
+schemaPath: String? = null
