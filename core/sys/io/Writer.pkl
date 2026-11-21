@@ -1,0 +1,10 @@
+module bark.io.Writer
+
+/// Thin write control layer
+function write(
+  basePath: String,
+  files: Mapping<String, FileOutput>
+): Mapping<String, FileOutput> =
+  files.toMap()
+    .mapKeys((subpath, _) -> "\(basePath)/\(subpath)")
+    .toMapping()

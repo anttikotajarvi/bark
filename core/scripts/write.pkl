@@ -1,0 +1,76 @@
+/// Standard filesystem write interface for Bark CLI.
+///
+/// Provides a consistent way to write text, copy files, and copy directory
+/// contents through Bark Core's writer. Centralizes filesystem output
+/// behavior so CLI operations and extensions use the same interface.
+///
+/// This script handles resource loading and delegates path mapping to
+/// the core writer.
+
+extends "pkl:Command"
+
+import "../sys/io/Writer.pkl" as Writer
+
+options: Options
+
+class Options {
+  /// Destination file or directory.
+  path: String
+
+  /// Text to write.
+  text: String?
+
+  /// Source file or directory.
+  from: String?
+}
+
+local sourcePath = options.from ?? ""
+local sourceUri =
+  if (sourcePath.startsWith("file:")) sourcePath
+  else if (sourcePath.startsWith("/")) "file://\(sourcePath)"
+  else sourcePath
+
+local sourceRoot =
+  if (sourceUri.endsWith("/")) sourceUri.dropLast(1)
+  else sourceUri
+
+// read* normalizes "file:///x" keys to "file:/x"
+local keyRoot =
+  if (sourceRoot.startsWith("file://")) "file:" + sourceRoot.drop(7)
+  else sourceRoot
+
+local allSourceEntries = read*("\(sourceRoot)/**").toMap()
+
+// Drop directory entries (those that are a prefix of another entry).
+local sourceFiles = allSourceEntries.filter((uri, _) ->
+  !allSourceEntries.keys.any((other) -> other.startsWith("\(uri)/"))
+)
+
+output {
+  files =
+    if (options.path.isBlank)
+      throw("--path cannot be empty")
+    else if ((options.text == null) == (options.from == null))
+      throw("Specify exactly one of --text or --from")
+    else if (options.text != null)
+      Writer.write(".", new Mapping {
+        [options.path] = new FileOutput {
+          text = options.text ?? ""
+        }
+      })
+    else if (sourceFiles.length > 0)
+      Writer.write(options.path,
+        sourceFiles
+          .mapKeys((uri, _) -> uri.drop(keyRoot.length + 1))
+          .mapValues((_, resource) ->
+            new FileOutput { bytes = resource.bytes }
+          )
+          .toMapping()
+      )
+    else
+      Writer.write(".", new Mapping {
+        [options.path] = new FileOutput {
+          bytes = read(sourceUri).bytes
+        }
+      })
+}
