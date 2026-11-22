@@ -10,34 +10,177 @@ typealias PosixDirName = G.PosixDirName
 typealias PosixFileName = G.PosixFileName
 typealias SchemaPath = G.SchemaPath
 
+/// Reference to a schema module, for use in `Table` and `Index` nodes.
+///
+/// The path is relative to the `.bark` directory, where `registry.pkl` lives.
+///
+/// Example:
+/// ```
+/// Meta.schema("schemas/Product.pkl")
+/// ```
 function schema(path: G.SchemaPath): Sys.Schema =
   let (p = path)
     new Sys.Schema {
       path = p
     }
 
+/// A plain directory with a fixed set of named children.
+///
+/// Use it to group nodes under a common parent. It does not restrict the
+/// directory to the declared children; other files and directories may exist.
+///
+/// Example:
+/// ```
+/// graph = Meta.Dir(new Meta.Children {
+///   ["products"] = Meta.Table(Meta.schema("schemas/Product.pkl"))
+///   ["config"] = Meta.Dir(new Meta.Children {
+///     ["regions"] = Meta.Table(Meta.schema("schemas/Region.pkl"))
+///   })
+/// })
+/// ```
+/// Matching layout:
+/// ```
+/// products/
+///   p1.pkl
+/// config/
+///   regions/
+///     eu.pkl
+/// ```
+/// Projection (JSON), with p1 = `{ name = "Widget", price = 9.5 }` and
+/// eu = `{ code = "EU" }`:
+/// ```
+/// {
+///   "products": { "p1": { "name": "Widget", "price": 9.5 } },
+///   "config": { "regions": { "eu": { "code": "EU" } } }
+/// }
+/// ```
 function Dir(nodes: Sys.Children): Sys.DirNode =
   new Sys.DirNode {
     _nodes = nodes
   }
 
-function Table(schema: Sys.Schema): Sys.TableNode =
+/// A directory of `.pkl` files, each one an entry conforming to `entrySchema`.
+/// The file name (without extension) is the entry's key.
+///
+/// Example:
+/// ```
+/// ["products"] = Meta.Table(Meta.schema("schemas/Product.pkl"))
+/// ```
+/// Matching layout:
+/// ```
+/// products/
+///   p1.pkl      // each file is a Product
+///   p2.pkl
+/// ```
+/// Projection (JSON), with schema `Product { name: String, price: Number }`:
+/// ```
+/// {
+///   "products": {
+///     "p1": { "name": "Widget", "price": 9.5 },
+///     "p2": { "name": "Gadget", "price": 24 }
+///   }
+/// }
+/// ```
+function Table(entrySchema: Sys.Schema): Sys.TableNode =
   new Sys.TableNode {
-    _schema = schema
+    _schema = entrySchema
   }
 
+/// A directory of arbitrarily named subdirectories, each one shaped like
+/// `entryNode`.
+///
+/// Use it when entries are themselves directories (or contain more structure)
+/// rather than single files.
+///
+/// Example:
+/// ```
+/// ["customers"] = Meta.Collection(
+///   Meta.Dir(new Meta.Children {
+///     ["orders"] = Meta.Table(Meta.schema("schemas/Order.pkl"))
+///   })
+/// )
+/// ```
+/// Matching layout:
+/// ```
+/// customers/
+///   acme/
+///     orders/
+///       o1.pkl
+///   globex/
+///     orders/
+///       o7.pkl
+/// ```
+/// Projection (JSON), with schema `Order { total: Number }`:
+/// ```
+/// {
+///   "customers": {
+///     "acme":   { "orders": { "o1": { "total": 120 } } },
+///     "globex": { "orders": { "o7": { "total": 40 } } }
+///   }
+/// }
+/// ```
 function Collection(entryNode: Sys.AnyNode): Sys.CollectionNode =
   new Sys.CollectionNode {
     _entryNode = entryNode
   }
 
-function IndexedDir(schema: Sys.Schema, nodes: Sys.Children): Sys.IndexNode =
+/// A directory whose `index.pkl` conforms to `indexSchema`, and which also
+/// declares named children like `Dir`.
+/// Note that only the index.pkl contents are included in the projection; 
+/// all other structure is enforced but hidden. 
+/// To include structure from within an index, do it explicitly by importing 
+/// it from the index.pkl file.
+///  
+///
+/// Example:
+/// ```
+/// ["catalog"] = Meta.IndexedDir(
+///   Meta.schema("schemas/CatalogIndex.pkl"),
+///   new Meta.Children {
+///     ["products"] = Meta.Table(Meta.schema("schemas/Product.pkl"))
+///   }
+/// )
+/// ```
+/// Matching layout:
+/// ```
+/// catalog/
+///   index.pkl     // a CatalogIndex
+///   products/
+///     p1.pkl
+/// ```
+/// Projection (JSON): `index.pkl` is a projection boundary, so the directory
+/// is represented by the index entry alone and its children are not included.
+/// With schema `CatalogIndex { title: String }`:
+/// ```
+/// {
+///   "catalog": { "title": "Spring catalog" }
+/// }
+/// ```
+function IndexedDir(indexSchema: Sys.Schema, nodes: Sys.Children): Sys.IndexNode =
   new Sys.IndexNode {
-    _schema = schema
+    _schema = indexSchema
     _nodes = nodes
   }
 
-function Index(schema: Sys.Schema): Sys.IndexNode =
+/// A directory whose `index.pkl` conforms to `indexSchema`, with no declared
+/// children. Use `IndexedDir` if the directory also needs child nodes.
+///
+/// Example:
+/// ```
+/// ["settings"] = Meta.Index(Meta.schema("schemas/Settings.pkl"))
+/// ```
+/// Matching layout:
+/// ```
+/// settings/
+///   index.pkl     // a Settings
+/// ```
+/// Projection (JSON), with schema `Settings { theme: String, debug: Boolean }`:
+/// ```
+/// {
+///   "settings": { "theme": "dark", "debug": false }
+/// }
+/// ```
+function Index(indexSchema: Sys.Schema): Sys.IndexNode =
   new Sys.IndexNode {
-    _schema = schema
+    _schema = indexSchema
   }
