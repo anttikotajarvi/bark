@@ -17,10 +17,11 @@
 module bark.io.PathResolver
 
 import "../GraphModel.pkl" as GM
+import "../extensions/Initializer.pkl" as Init
 
 
 /// What a logical path resolves to, as reported to users and the CLI.
-abstract class Resolution {
+abstract class PathInfo {
   /// The requested path.
   path: String
 
@@ -34,64 +35,99 @@ abstract class Resolution {
   /// For indexDir and tableEntry, constrains the entry itself.
   /// For tableDir, constrains the files contained by the table.
   schema: GM.Schema?
+
+  /// Initializers whose target matches this path's role and schema.
+  initializers: Mapping<String, InitializerInfo> = new {}
+}
+
+/// Limited view of an initializer, as reported to users and the CLI.
+class InitializerInfo {
+  /// Kind of the implementation, e.g. "generator" or "subprocess".
+  kind: Init.ImplementationKind
+
+  /// Extra files or directories included in the fingerprint.
+  fingerprintDeps: List<String>
 }
 
 /// A node explicitly declared in the graph.
-class NodeResolution extends Resolution {
+class NodePathInfo extends PathInfo {
   node: GM.AnyNode
 }
 
 /// An entry contained by a table or collection.
-class EntryResolution extends Resolution {
+class EntryPathInfo extends PathInfo {
   /// Type of the node holding the entry.
   ownerType: "table-node" | "collection-node"
 }
 
 /// A path not declared by the graph.
-class LooseResolution extends Resolution {
+class LoosePathInfo extends PathInfo {
   /// Type of the parent, if it is a declared node; null otherwise.
   ownerType: GM.NodeType?
 }
 
 /// Resolve a logical path (e.g. "lots/L1") against the registry graph.
 /// The path does not need to exist on disk.
-function resolvePath(graph: GM.AnyNode, path_: String): Resolution =
+function resolvePath(graph: GM.AnyNode, declared: Mapping<String, Init>, path_: String): PathInfo =
   let (segments = pathSegments(path_))
   let (found = GM.getNode(graph, segments))
   let (parent = if (segments.isEmpty) null else GM.getNode(graph, segments.dropLast(1)))
   let (leaf = if (segments.isEmpty) null else segments.last)
     if (parent is GM.CollectionNode && found != null)
-      new EntryResolution {
+      new EntryPathInfo {
         path = path_
         name = leaf
         ownerType = parent.type
         role = roleOf(found)
         schema = schemaOf(found)
+        initializers = matchInitializers(declared, roleOf(found), schemaOf(found))
       }
     else if (parent is GM.TableNode)
-      new EntryResolution {
+      new EntryPathInfo {
         path = path_
         name = leaf
         ownerType = parent.type
         role = "tableEntry"
         schema = parent._schema
+        initializers = matchInitializers(declared, "tableEntry", parent._schema)
       }
     else if (found != null)
-      new NodeResolution {
+      new NodePathInfo {
         path = path_
         name = leaf
         node = found
         role = roleOf(found)
         schema = schemaOf(found)
+        initializers = matchInitializers(declared, roleOf(found), schemaOf(found))
       }
     else
-      new LooseResolution {
+      new LoosePathInfo {
         path = path_
         name = leaf
         ownerType = parent?.type
         role = null
         schema = null
+        initializers = matchInitializers(declared, null, null)
       }
+
+/// Initializers whose target matches the given role and schema.
+local function matchInitializers(
+  initializers: Mapping<String, Init>,
+  role: GM.PathRole?,
+  schema: GM.Schema?
+): Mapping<String, InitializerInfo> =
+  new Mapping {
+    when (role != null && schema != null) {
+      for (name, i in initializers) {
+        when (i.target.role == role && i.target.schema.path == schema.path) {
+          [name] = new InitializerInfo {
+            kind = i.implementation.kind
+            fingerprintDeps = i.fingerprintDeps
+          }
+        }
+      }
+    }
+  }
 
 /// Classify a declared graph node by its filesystem role.
 local function roleOf(node: GM.AnyNode): GM.PathRole =

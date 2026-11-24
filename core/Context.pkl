@@ -9,6 +9,9 @@ import "Meta.pkl" as Meta
 /// The registry graph describing the data repo layout.
 graph: Meta.Graph
 
+/// Initializers declared by the registry.
+initializers: Mapping<String, Meta.Initializer> = new {}
+
 /// Pkl files in the data repo. Keys are relative to the data repo root
 /// (`lots/L1/index.pkl`), values are lazy; bark filters on keys.
 /// Build it with `rooted`, since a glob's keys are relative to the file containing it.

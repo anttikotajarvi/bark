@@ -19,7 +19,7 @@ class Options {
   query: String
 }
 
-local resolved = PathResolver.resolvePath(ctx.graph, options.query)
+local resolved = PathResolver.resolvePath(ctx.graph, ctx.initializers, options.query)
 
 output {
   text = new JsonRenderer {}.renderDocument(new Dynamic {

@@ -11,5 +11,6 @@ config {
 }
 
 graph = import("registry.pkl").graph
+initializers = import("registry.pkl").initializers
 
 readFile = (path) -> read?("../\(path)")

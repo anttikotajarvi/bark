@@ -1,5 +1,6 @@
 amends "@bark/RegistryDeclaration.pkl" // Required amendment
 import "@bark/Meta.pkl" as Meta
+import "@bark/sys/extensions/Initializer.pkl" as Initializer
 
 
 
@@ -16,7 +17,7 @@ local defaultGraph =
         ["logs"] = Meta.Table(schemas.log)
       })
 
-    //["products"] = Meta.Table(schemas.product)
+    ["products"] = Meta.Table(schemas.product)
 
     ["lots"] = Meta.Collection(Meta.Index(schemas.lot))
 
@@ -33,3 +34,33 @@ local defaultGraph =
   })
 
 graph = defaultGraph
+
+initializers {
+  ["init-product"] = (Initializer) {
+    target {
+      role = "tableEntry"
+      schema = schemas.product
+    }
+    implementation = new Meta.Subprocess {
+      command = (_) -> new Meta.Command { args = List("echo", "init product") }
+    }
+  }
+  ["gen-product"] = (Initializer) {
+    target {
+      role = "tableEntry"
+      schema = schemas.product
+    }
+    implementation = new Meta.Generator { generate = (_) -> new Mapping {
+      ["new-product.pkl"] = new FileOutput {
+        text = """
+          amends "schema.pkl"
+
+          id = "NEW-PRODUCT"
+          description = ""
+          stock_qty = 0
+
+          """
+      }
+    } }
+  }
+}

@@ -1,10 +1,20 @@
 import "sys/Generic.pkl" as G
 import "sys/GraphModel.pkl" as Sys
+import "sys/extensions/Initializer.pkl" as Init
 
 typealias Schema = Sys.Schema
 typealias AnyNode = Sys.AnyNode
 typealias Children = Sys.Children
 typealias Graph = Sys.Graph
+
+/// An initializer declaration. Define one by amending the module:
+/// `(import("@bark/sys/extensions/Initializer.pkl")) { target { ... } implementation = ... }`.
+typealias Initializer = Init
+typealias Implementation = Init.Implementation
+typealias Generator = Init.Generator
+typealias Subprocess = Init.Subprocess
+typealias Command = Init.Command
+typealias Target = Init.TargetKind
 
 typealias PosixDirName = G.PosixDirName
 typealias PosixFileName = G.PosixFileName

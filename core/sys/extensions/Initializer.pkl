@@ -14,18 +14,33 @@ fingerprintDeps: List<String> = List()
 
 target: TargetKind
 
-implementation: Generator | Subprocess
+/// How the initializer produces its output.
+implementation: Implementation
 
 class InitializerContext {
 
 }
-typealias Generator = (InitializerContext) -> Mapping<String, FileOutput>
+
+/// Stable identifiers for the implementation kinds, as reported to the CLI.
+typealias ImplementationKind = "generator" | "subprocess"
+
+abstract class Implementation {
+  abstract fixed kind: ImplementationKind
+}
+
+/// Produces files directly.
+class Generator extends Implementation {
+  fixed kind = "generator"
+  generate: (InitializerContext) -> Mapping<String, FileOutput>
+}
 
 class Command {
   args: List<String>
   env: Mapping<String, String> = new Mapping {}
 }
 
-class Subprocess {
+/// Runs an external command.
+class Subprocess extends Implementation {
+  fixed kind = "subprocess"
   command: (InitializerContext) -> Command
 }
