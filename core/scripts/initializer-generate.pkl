@@ -1,0 +1,41 @@
+open module bark.scripts.InitializerGenerate
+
+extends "pkl:Command"
+
+import "../Context.pkl" as Context
+import "../sys/extensions/Initializer.pkl" as Init
+import "../sys/io/PathResolver.pkl" as PathResolver
+import "../sys/io/Writer.pkl" as Writer
+
+
+/// Bark context supplied by the project entrypoint.
+ctx: Context
+
+options: Options
+
+class Options {
+  /// Logical path relative to the data repository root.
+  @Flag {
+    completionCandidates = "paths"
+  }
+  query: String
+
+  initializerName: String
+}
+
+local resolved = PathResolver.resolvePath(ctx.graph, ctx.initializers, options.query)
+
+local initializer =
+  if (resolved.initializers.containsKey(options.initializerName))
+    ctx.initializers[options.initializerName]
+  else
+    throw("Initializer `\(options.initializerName)` does not apply to `\(options.query)`. Applicable: \(resolved.initializers.keys.join(", "))")
+
+local generated = initializer.run(new Init.InitializerContext {})
+
+output {
+  // `pkl run` renders text even when files are set; the default would render ctx.
+  text = ""
+
+  files = Writer.write(resolved.filePath, generated)
+}

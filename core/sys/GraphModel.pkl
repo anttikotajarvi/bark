@@ -44,6 +44,9 @@ typealias PathRole =
   "collectionDir" |
   "tableEntry"
 
+/// Whether a path with this role is a file (otherwise a directory).
+function isFileRole(role: PathRole): Boolean = role == "tableEntry"
+
 /// The graph declaration at the given path segments, or null if the graph declares none.
 /// Table entries are not nodes, so they yield null; see `io/PathResolver.pkl`.
 function getNode(graph: AnyNode, segments: List<String>): AnyNode? =

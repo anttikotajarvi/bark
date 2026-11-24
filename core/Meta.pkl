@@ -8,11 +8,12 @@ typealias Children = Sys.Children
 typealias Graph = Sys.Graph
 
 /// An initializer declaration. Define one by amending the module:
-/// `(import("@bark/sys/extensions/Initializer.pkl")) { target { ... } implementation = ... }`.
+/// `(import("@bark/sys/extensions/Initializer.pkl")) { target { ... } generate = ... }`,
+/// optionally with a `prepare` hook that the CLI runs before `generate`.
 typealias Initializer = Init
-typealias Implementation = Init.Implementation
-typealias Generator = Init.Generator
-typealias Subprocess = Init.Subprocess
+typealias InitializerContext = Init.InitializerContext
+typealias Generated = Init.Generated
+typealias Hook = Init.Hook
 typealias Command = Init.Command
 typealias Target = Init.TargetKind
 

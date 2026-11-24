@@ -1,0 +1,5 @@
+amends "schema.pkl"
+
+id = "NEW-PRODUCT"
+description = ""
+stock_qty = 0

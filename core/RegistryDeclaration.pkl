@@ -3,6 +3,5 @@ import "Meta.pkl" as Meta
 graph: Meta.Graph
 
 /// Initializers available, keyed by name.
-/// to the repo. An initializer applies to every path
-/// whose role and schema match its `target`.
+/// An initializer applies to every path whose role and schema match its `target`.
 initializers: Mapping<String, Meta.Initializer> = new {}

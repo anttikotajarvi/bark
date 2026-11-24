@@ -1,10 +1,14 @@
 module bark.io.Writer
 
-/// Thin write control layer
+/// Thin write control layer.
+/// A FileOutput is written at `path`; a Mapping is written under it, keyed by subpath.
 function write(
-  basePath: String,
-  files: Mapping<String, FileOutput>
+  path: String,
+  content: FileOutput | Mapping<String, FileOutput>
 ): Mapping<String, FileOutput> =
-  files.toMap()
-    .mapKeys((subpath, _) -> "\(basePath)/\(subpath)")
-    .toMapping()
+  if (content is FileOutput)
+    new Mapping { [path] = content }
+  else
+    content.toMap()
+      .mapKeys((subpath, _) -> "\(path)/\(subpath)")
+      .toMapping()

@@ -41,26 +41,25 @@ initializers {
       role = "tableEntry"
       schema = schemas.product
     }
-    implementation = new Meta.Subprocess {
+    prepare {
       command = (_) -> new Meta.Command { args = List("echo", "init product") }
     }
+    generate = (_) -> new FileOutput { text = "" }
   }
   ["gen-product"] = (Initializer) {
     target {
       role = "tableEntry"
       schema = schemas.product
     }
-    implementation = new Meta.Generator { generate = (_) -> new Mapping {
-      ["new-product.pkl"] = new FileOutput {
-        text = """
-          amends "schema.pkl"
+    generate = (_) -> new FileOutput {
+      text = """
+        amends "schema.pkl"
 
-          id = "NEW-PRODUCT"
-          description = ""
-          stock_qty = 0
+        id = "NEW-PRODUCT"
+        description = ""
+        stock_qty = 0
 
-          """
-      }
-    } }
+        """
+    }
   }
 }

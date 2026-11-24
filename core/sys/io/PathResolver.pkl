@@ -1,19 +1,20 @@
 
 /// Path resolution examples:
 ///
-/// Graph declaration              Path          Role           Schema
-/// ─────────────────────────────────────────────────────────────────────
-/// Table(Product)                 products      tableDir       Product
-/// Table(Product)                 products/P1   tableEntry     Product
-/// Collection(Index(Product))     lots          collectionDir  null
-/// Collection(Index(Product))     lots/L1       indexDir       Product
-/// Collection(Table(Product))     groups/G1     tableDir       Product
-/// Index(Product)                 fixedProduct  indexDir       Product
-/// Dir(...)                       business      dir            null
-/// Undeclared path                other         null           null
+/// Graph declaration              Logical path  File path        File type  Role           Schema
+/// ──────────────────────────────────────────────────────────────────────────────────────────────
+/// Table(Product)                 products      products         directory  tableDir       Product
+/// Table(Product)                 products/P1   products/P1.pkl  file       tableEntry     Product
+/// Collection(Index(Product))     lots          lots             directory  collectionDir  null
+/// Collection(Index(Product))     lots/L1       lots/L1          directory  indexDir       Product
+/// Collection(Table(Product))     groups/G1     groups/G1        directory  tableDir       Product
+/// Index(Product)                 fixedProduct  fixedProduct     directory  indexDir       Product
+/// Dir(...)                       business      business         directory  dir            null
+/// Undeclared path                other         other            null       null           null
 ///
 /// PathRole describes the structural type of the resolved filesystem object.
 /// Collection entries inherit the role of their declared entry node.
+/// The file path and type follow from the role: only a tableEntry is a file.
 module bark.io.PathResolver
 
 import "../GraphModel.pkl" as GM
@@ -22,8 +23,17 @@ import "../extensions/Initializer.pkl" as Init
 
 /// What a logical path resolves to, as reported to users and the CLI.
 abstract class PathInfo {
-  /// The requested path.
-  path: String
+  /// The requested path in the graph, e.g. "products/P1".
+  logicalPath: String
+
+  /// Where the path lands on disk, relative to the data repo root, e.g. "products/P1.pkl".
+  filePath: String = if (role != null && GM.isFileRole(role)) "\(logicalPath).pkl" else logicalPath
+
+  /// Whether the path lands on a file or a directory; null for loose paths.
+  fileType: FileType? =
+    if (role == null) null
+    else if (GM.isFileRole(role)) "file"
+    else "directory"
 
   /// Last path segment; null for the graph root.
   name: String?
@@ -40,12 +50,15 @@ abstract class PathInfo {
   initializers: Mapping<String, InitializerInfo> = new {}
 }
 
+typealias FileType = "file" | "directory"
+
 /// Limited view of an initializer, as reported to users and the CLI.
 class InitializerInfo {
-  /// Kind of the implementation, e.g. "generator" or "subprocess".
-  kind: Init.ImplementationKind
+  /// Whether the initializer runs a prepare hook before generating.
+  hasPrepare: Boolean
 
-  /// Extra files or directories included in the fingerprint.
+  /// Extra files or directories included in the prepare hook's fingerprint.
+  /// Empty when there is no prepare hook.
   fingerprintDeps: List<String>
 }
 
@@ -75,7 +88,7 @@ function resolvePath(graph: GM.AnyNode, declared: Mapping<String, Init>, path_: 
   let (leaf = if (segments.isEmpty) null else segments.last)
     if (parent is GM.CollectionNode && found != null)
       new EntryPathInfo {
-        path = path_
+        logicalPath = path_
         name = leaf
         ownerType = parent.type
         role = roleOf(found)
@@ -84,7 +97,7 @@ function resolvePath(graph: GM.AnyNode, declared: Mapping<String, Init>, path_: 
       }
     else if (parent is GM.TableNode)
       new EntryPathInfo {
-        path = path_
+        logicalPath = path_
         name = leaf
         ownerType = parent.type
         role = "tableEntry"
@@ -93,7 +106,7 @@ function resolvePath(graph: GM.AnyNode, declared: Mapping<String, Init>, path_: 
       }
     else if (found != null)
       new NodePathInfo {
-        path = path_
+        logicalPath = path_
         name = leaf
         node = found
         role = roleOf(found)
@@ -102,7 +115,7 @@ function resolvePath(graph: GM.AnyNode, declared: Mapping<String, Init>, path_: 
       }
     else
       new LoosePathInfo {
-        path = path_
+        logicalPath = path_
         name = leaf
         ownerType = parent?.type
         role = null
@@ -121,8 +134,8 @@ local function matchInitializers(
       for (name, i in initializers) {
         when (i.target.role == role && i.target.schema.path == schema.path) {
           [name] = new InitializerInfo {
-            kind = i.implementation.kind
-            fingerprintDeps = i.fingerprintDeps
+            hasPrepare = i.prepare != null
+            fingerprintDeps = i.prepare?.fingerprintDeps ?? List()
           }
         }
       }
