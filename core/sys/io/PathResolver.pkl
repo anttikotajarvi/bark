@@ -1,86 +1,111 @@
+
+/// Path resolution examples:
+///
+/// Graph declaration              Path          Role           Schema
+/// ─────────────────────────────────────────────────────────────────────
+/// Table(Product)                 products      tableDir       Product
+/// Table(Product)                 products/P1   tableEntry     Product
+/// Collection(Index(Product))     lots          collectionDir  null
+/// Collection(Index(Product))     lots/L1       indexDir       Product
+/// Collection(Table(Product))     groups/G1     tableDir       Product
+/// Index(Product)                 fixedProduct  indexDir       Product
+/// Dir(...)                       business      dir            null
+/// Undeclared path                other         null           null
+///
+/// PathRole describes the structural type of the resolved filesystem object.
+/// Collection entries inherit the role of their declared entry node.
 module bark.io.PathResolver
 
 import "../GraphModel.pkl" as GM
 
-/// How a logical path relates to the graph. Stable: node types and entry types are
-/// read from `node.type` and `ownerType`, not encoded here.
-///   node  - the graph declares a node at this path
-///   entry - an element of a table or collection
-///   loose - the graph declares nothing at this path
-typealias ResolutionKind = "node" | "entry" | "loose"
 
 /// What a logical path resolves to, as reported to users and the CLI.
 abstract class Resolution {
-  fixed kind: ResolutionKind
-
   /// The requested path.
   path: String
 
   /// Last path segment; null for the graph root.
   name: String?
 
-  /// The schema the value at this path must follow; null when none applies
-  /// (dirs, tables and collections themselves, and loose paths).
+  /// Structural role of the path; null for loose paths.
+  role: GM.PathRole?
+
+  /// Schema associated with this role; null when none applies.
+  /// For indexDir and tableEntry, constrains the entry itself.
+  /// For tableDir, constrains the files contained by the table.
   schema: GM.Schema?
 }
 
+/// A node explicitly declared in the graph.
 class NodeResolution extends Resolution {
-  fixed kind = "node"
   node: GM.AnyNode
 }
 
+/// An entry contained by a table or collection.
 class EntryResolution extends Resolution {
-  fixed kind = "entry"
-
-  /// Type of the node holding the entry: its table or collection.
+  /// Type of the node holding the entry.
   ownerType: "table-node" | "collection-node"
 }
 
+/// A path not declared by the graph.
 class LooseResolution extends Resolution {
-  fixed kind = "loose"
-
   /// Type of the parent, if it is a declared node; null otherwise.
   ownerType: GM.NodeType?
 }
 
 /// Resolve a logical path (e.g. "lots/L1") against the registry graph.
 /// The path does not need to exist on disk.
-function resolvePath(graph: GM.AnyNode, path: String): Resolution =
-  let (segments = pathSegments(path))
+function resolvePath(graph: GM.AnyNode, path_: String): Resolution =
+  let (segments = pathSegments(path_))
   let (found = GM.getNode(graph, segments))
   let (parent = if (segments.isEmpty) null else GM.getNode(graph, segments.dropLast(1)))
-  let (requested = path)
   let (leaf = if (segments.isEmpty) null else segments.last)
     if (parent is GM.CollectionNode && found != null)
       new EntryResolution {
-        path = requested
+        path = path_
         name = leaf
         ownerType = parent.type
+        role = roleOf(found)
         schema = schemaOf(found)
       }
     else if (parent is GM.TableNode)
       new EntryResolution {
-        path = requested
+        path = path_
         name = leaf
         ownerType = parent.type
+        role = "tableEntry"
         schema = parent._schema
       }
     else if (found != null)
       new NodeResolution {
-        path = requested
+        path = path_
         name = leaf
         node = found
+        role = roleOf(found)
         schema = schemaOf(found)
       }
     else
       new LooseResolution {
-        path = requested
+        path = path_
         name = leaf
         ownerType = parent?.type
+        role = null
+        schema = null
       }
 
+/// Classify a declared graph node by its filesystem role.
+local function roleOf(node: GM.AnyNode): GM.PathRole =
+  if (node is GM.DirNode) "dir"
+  else if (node is GM.IndexNode) "indexDir"
+  else if (node is GM.TableNode) "tableDir"
+  else if (node is GM.CollectionNode) "collectionDir"
+  else throw("Unknown graph node type: '\(node.type)'")
+
+/// Return the schema associated with a node, if any.
 local function schemaOf(node: GM.AnyNode): GM.Schema? =
-  if (node is GM.IndexNode) node._schema else null
+  if (node is GM.IndexNode) node._schema
+  else if (node is GM.TableNode) node._schema
+  else null
 
 local function pathSegments(path: String): List<String> =
   if (path.isEmpty || path == ".")
