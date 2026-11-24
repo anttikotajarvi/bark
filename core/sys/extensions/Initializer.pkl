@@ -1,46 +1,28 @@
 module bark.extensions.Initializer
 
-extends "Extension.pkl"
-
 import "../GraphModel.pkl" as Sys
-class TargetKind {
-  role: Sys.PathRole
-  schema: Sys.Schema
-}
 
-/// Additional files or directories included in the fingerprint.
-/// Paths are relative to the extension directory.
-fingerprintDeps: List<String> = List()
 
 target: TargetKind
 
-/// How the initializer produces its output.
-implementation: Implementation
+prepare: Hook?
+
+generate: (InitializerContext) -> Mapping<String, FileOutput>
 
 class InitializerContext {
 
 }
 
-/// Stable identifiers for the implementation kinds, as reported to the CLI.
-typealias ImplementationKind = "generator" | "subprocess"
-
-abstract class Implementation {
-  abstract fixed kind: ImplementationKind
+class TargetKind {
+  role: Sys.PathRole
+  schema: Sys.Schema
 }
 
-/// Produces files directly.
-class Generator extends Implementation {
-  fixed kind = "generator"
-  generate: (InitializerContext) -> Mapping<String, FileOutput>
+class Hook {
+  command: (InitializerContext) -> Command
+  fingerprintDeps: List<String> = List()
 }
-
 class Command {
   args: List<String>
   env: Mapping<String, String> = new Mapping {}
-}
-
-/// Runs an external command.
-class Subprocess extends Implementation {
-  fixed kind = "subprocess"
-  command: (InitializerContext) -> Command
 }
