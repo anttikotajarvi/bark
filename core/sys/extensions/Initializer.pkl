@@ -1,4 +1,6 @@
 module bark.extensions.Initializer
+import "pkl:json"
+
 
 import "../GraphModel.pkl" as Sys
 
@@ -20,7 +22,12 @@ function run(ctx: InitializerContext): Generated(
 ) = generate.apply(ctx)
 
 class InitializerContext {
-
+  input: String
+  /// Parse input as JSON when needed.
+  function parseJson(): Any =
+    new json.Parser {
+      useMapping = true
+    }.parse(input)
 }
 
 class TargetKind {
