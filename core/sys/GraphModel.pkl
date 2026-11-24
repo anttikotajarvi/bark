@@ -35,6 +35,15 @@ class IndexNode extends AnyNode {
   _nodes: Children = new Children {}
 }
 
+/// Type for naming a filesystem position in relation to the graph.
+/// This naming feels sloppy and might to indicate a possible underlying inadequacy of the node system.
+typealias PathRole =
+  "dir" |
+  "indexDir" |
+  "tableDir" |
+  "collectionDir" |
+  "tableEntry"
+
 /// The graph declaration at the given path segments, or null if the graph declares none.
 /// Table entries are not nodes, so they yield null; see `io/PathResolver.pkl`.
 function getNode(graph: AnyNode, segments: List<String>): AnyNode? =

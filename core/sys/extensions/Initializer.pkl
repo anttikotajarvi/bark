@@ -2,7 +2,30 @@ module bark.extensions.Initializer
 
 extends "Extension.pkl"
 
-// Exact type still to be decided.
-targetKind: String?
+import "../GraphModel.pkl" as Sys
+class TargetKind {
+  role: Sys.PathRole
+  schema: Sys.Schema
+}
 
-schemaPath: String? = null
+/// Additional files or directories included in the fingerprint.
+/// Paths are relative to the extension directory.
+fingerprintDeps: List<String> = List()
+
+target: TargetKind
+
+implementation: Generator | Subprocess
+
+class InitializerContext {
+
+}
+typealias Generator = (InitializerContext) -> Mapping<String, FileOutput>
+
+class Command {
+  args: List<String>
+  env: Mapping<String, String> = new Mapping {}
+}
+
+class Subprocess {
+  command: (InitializerContext) -> Command
+}

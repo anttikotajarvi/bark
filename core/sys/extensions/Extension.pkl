@@ -1,9 +1,12 @@
 open module bark.extensions.Extension
+import "../GraphModel.pkl" as Sys
+class TargetKind {
+  role: Sys.PathRole
+  schema: Sys.Schema
+}
 
-/// Command to execute, as an argument list.
-/// Null means no external command is required.
-command: List<String>? = null
 
 /// Additional files or directories included in the fingerprint.
 /// Paths are relative to the extension directory.
 fingerprintDeps: List<String> = List()
+target: TargetKind
