@@ -1,51 +1,16 @@
+/// An initializer for paths matching `target`, declared by name in the registry.
 module bark.extensions.Initializer
-import "pkl:json"
 
+extends "InitializerBase.pkl"
 
 import "../GraphModel.pkl" as Sys
-import "../Generic.pkl" as G
-
 
 target: TargetKind
-
-prepare: Hook?
-
-typealias Generated = FileOutput | Mapping<String, FileOutput>
-
-/// A file target (tableEntry) must return a FileOutput; other roles a Mapping of
-/// files relative to the target directory. Checked by `run`, not here: Pkl does
-/// not check the return type of a function value.
-generate: (InitializerContext) -> Generated
-
-/// Calls `generate` and checks its result against `target`.
-function run(ctx: InitializerContext): Generated(
-  if (Sys.isFileRole(target.role)) this is FileOutput else this is Mapping
-) = generate.apply(ctx)
-
-class InitializerContext {
-  input: String
-  /// Parse input as JSON when needed.
-  function parseJson(): Any =
-    new json.Parser {
-      useMapping = true
-    }.parse(input)
-}
 
 class TargetKind {
   role: Sys.PathRole
   schema: Sys.Schema
 }
 
-class Hook {
-  command: (InitializerContext) -> Command
-  fingerprintDeps: List<String> = List()
-}
-class HookEvaluated {
-  command: Command
-  fingerprintDeps: List<String> = List()
-}
-
-class Command {
-  args: List<String>
-  env: G.Env = new Mapping {}
-}
+/// Calls `generate` and checks its result against `target`.
+function run(ctx: InitializerContext): Generated = runFor(target.role, ctx)

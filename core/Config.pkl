@@ -6,6 +6,7 @@ module bark.Config
 import "pkl:reflect"
 // Imports itself so the core root can be derived from this module's own location.
 import "Config.pkl" as Self
+import "sys/Util.pkl" as Util
 
 /// Prefix for core modules in generated source, with trailing separator
 /// (e.g. "@bark/"). Defaults to where the core was loaded from, pinning its version.
@@ -19,24 +20,12 @@ assumedOutputDir: String = ".bark/output"
 /// Files left out of the projection, matched by file name in any directory.
 omittedFilenames: List<String> = List("schema.pkl", "index-schema.pkl")
 
-class InitializerConfig {
-  /// Initializer used when none is named on the command line.
-  defaultName: String = "DEFAULT"
-}
-
-/// Settings for initializers.
-initializers: InitializerConfig = new {}
-
 /// Import string for a core module; `path` is relative to the core root.
 function coreImport(path: String): String = "\(coreRoot)\(path)"
 
 /// Import path from a file in `assumedOutputDir` to `target`, a path relative to the
 /// data repo root. ".bark/schemas/A.pkl" from ".bark/output" is "../schemas/A.pkl".
-function importPathFromOutput(target: String): String =
-  let (from = outputSegments())
-  let (to = target.split("/"))
-  let (common = commonLength(from, to.dropLast(1)))
-    from.drop(common).map((_) -> "../").join("") + to.drop(common).join("/")
+function importPathFromOutput(target: String): String = Util.importPathFrom(outputSegments(), target)
 
 local function outputSegments(): List<String> =
   let (segments = assumedOutputDir.split("/").filter((s) -> !s.isEmpty && s != "."))
@@ -44,9 +33,3 @@ local function outputSegments(): List<String> =
       throw("assumedOutputDir must not contain `..`: \(assumedOutputDir)")
     else
       segments
-
-local function commonLength(a: List<String>, b: List<String>): Int =
-  if (a.isEmpty || b.isEmpty || a.first != b.first)
-    0
-  else
-    1 + commonLength(a.drop(1), b.drop(1))

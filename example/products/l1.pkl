@@ -1,0 +1,6 @@
+amends "schema.pkl"
+
+id = "NEW-PRODUCT"
+description = ""
+stock_qty = 0
+new InitializerContext { pathInfo { logicalPath = "products/l1"; filePath = "products/l1.pkl"; fileType = "file"; name = "l1"; role = "tableEntry"; schema { path = "schemas/Product.pkl" }; initializers { ["init-product"] { hasPrepare = true; fingerprintDeps = List() }; ["gen-product"] { hasPrepare = false; fingerprintDeps = List() } }; ownerType = "table-node" }; input = "" }

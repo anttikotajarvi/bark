@@ -1,8 +1,12 @@
 import "Generic.pkl" as G
+import "constants.pkl" as Constants
 
 class Schema {
   /// Relative to the .bark directory, where registry.pkl lives.
   path: G.SchemaPath
+
+  /// Path relative to the data repo root.
+  function filePath(): String = "\(Constants.BARK_DIRNAME)/\(path)"
 }
 
 typealias NodeType = "dir-node" | "index-node" | "collection-node" | "table-node"

@@ -42,7 +42,7 @@ initializers {
       schema = schemas.product
     }
     prepare {
-      command = (_) -> new Meta.Command { args = List("echo", "init product") }
+      command = (ctx) -> new Meta.Command { args = List("echo", "init product") }
     }
     generate = (_) -> new FileOutput { text = "" }
   }
@@ -51,14 +51,14 @@ initializers {
       role = "tableEntry"
       schema = schemas.product
     }
-    generate = (_) -> new FileOutput {
+    generate = (ctx) -> new FileOutput {
       text = """
         amends "schema.pkl"
 
         id = "NEW-PRODUCT"
         description = ""
         stock_qty = 0
-
+        \(ctx)
         """
     }
   }

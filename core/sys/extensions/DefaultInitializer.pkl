@@ -1,0 +1,10 @@
+/// The initializer used for a role when none is named. Has no `target`: the role
+/// is the key it is registered under (see `defaults/Defaults.pkl`).
+module bark.extensions.DefaultInitializer
+
+extends "InitializerBase.pkl"
+
+import "../GraphModel.pkl" as Sys
+
+/// Calls `generate` and checks its result against `role`.
+function run(role: Sys.PathRole, ctx: InitializerContext): Generated = runFor(role, ctx)

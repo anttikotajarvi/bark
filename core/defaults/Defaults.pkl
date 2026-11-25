@@ -1,0 +1,13 @@
+/// Initializers used per role when none is named. Repos override a role by
+/// amending `defaults` in their context; other roles keep these.
+module bark.defaults.Defaults
+
+import "../sys/GraphModel.pkl" as Sys
+import "../sys/extensions/DefaultInitializer.pkl" as DefaultInitializer
+import "TableEntry.pkl" as TableEntry
+import "IndexDir.pkl" as IndexDir
+
+all: Mapping<Sys.PathRole, DefaultInitializer> = new {
+  ["tableEntry"] = TableEntry
+  ["indexDir"] = IndexDir
+}

@@ -12,7 +12,7 @@ const function moduleNameFromSchema(schema: Sys.Schema): String =
 
 function renderImports(ctx: Context, node: Sys.AnyNode): String =
   collectSchemas(ctx, node).toMap().values.map((schema) ->
-    Expr.importAs(ctx.config.importPathFromOutput(schemaFilePath(schema)), moduleNameFromSchema(schema))
+    Expr.importAs(ctx.config.importPathFromOutput(schema.filePath()), moduleNameFromSchema(schema))
   ).join("\n")
 
 // Schema discovery and deduplication are implementation policy for the import
@@ -20,12 +20,8 @@ function renderImports(ctx: Context, node: Sys.AnyNode): String =
 local typealias SchemaID = String
 
 // Identifies a schema by the file it resolves to, read through the context.
-// Schema paths are relative to the .bark directory.
-local function schemaFilePath(schema: Sys.Schema): String =
-  "\(Constants.BARK_DIRNAME)/\(schema.path)"
-
 local function schemaId(ctx: Context, schema: Sys.Schema): SchemaID =
-  let (path = schemaFilePath(schema))
+  let (path = schema.filePath())
   let (resource = ctx.readFile.apply(path))
     if (resource == null)
       throw("Schema file does not exist: \(path)")

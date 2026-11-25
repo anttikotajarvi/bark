@@ -5,12 +5,19 @@ module bark.Context
 
 import "Config.pkl" as Config
 import "Meta.pkl" as Meta
+import "defaults/Defaults.pkl" as Defaults
+import "sys/GraphModel.pkl" as Sys
+import "sys/extensions/DefaultInitializer.pkl" as DefaultInitializer
 
 /// The registry graph describing the data repo layout.
 graph: Meta.Graph
 
 /// Initializers declared by the registry.
 initializers: Mapping<String, Meta.Initializer> = new {}
+
+/// Initializers used per role when none is named. Override a role with
+/// `defaults { ["tableEntry"] = ... }`; the other roles keep the core defaults.
+defaults: Mapping<Sys.PathRole, DefaultInitializer> = Defaults.all
 
 /// Pkl files in the data repo. Keys are relative to the data repo root
 /// (`lots/L1/index.pkl`), values are lazy; bark filters on keys.
