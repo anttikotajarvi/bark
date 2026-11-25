@@ -13,6 +13,10 @@ package {
     "PklProject.deps.json"
     ".git/**"
     ".pkl-lsp/**"
+    // Editor-only project for the template's stubs; must never reach init.
+    "template/PklProject"
+    "template/PklProject.deps.json"
+    "template/.pkl-lsp/**"
   }
 }
 

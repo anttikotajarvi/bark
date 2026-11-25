@@ -1,0 +1,12 @@
+// Editor-only project so the template's `@bark/...` stubs resolve against the local core while
+//  working on it. Not part of the layout: core/PklProject excludes it from the package (so init
+//  never sees it), and the test runner overwrites it with tests/_template/PklProject.
+amends "pkl:Project"
+evaluatorSettings {
+  modulePath {
+    "."
+  }
+}
+dependencies {
+  ["bark"] = import("../PklProject")
+}

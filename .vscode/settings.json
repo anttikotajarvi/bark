@@ -1,0 +1,7 @@
+{
+  // tests/.work holds throwaway copies of test repos (with their own PklProjects); keep the LSP out.
+  "pkl.projects.excludedDirectories": ["**/tests/.work", "**/tests/.work/**"],
+  "files.watcherExclude": {
+    "**/tests/.work/**": true
+  }
+}
