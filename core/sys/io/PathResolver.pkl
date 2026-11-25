@@ -57,8 +57,7 @@ class InitializerInfo {
   /// Whether the initializer runs a prepare hook before generating.
   hasPrepare: Boolean
 
-  /// Extra files or directories included in the prepare hook's fingerprint.
-  /// Empty when there is no prepare hook.
+  /// This isnt strictly needed here
   fingerprintDeps: List<String>
 }
 

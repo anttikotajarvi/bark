@@ -1,12 +1,13 @@
-open module bark.scripts.InitializerGenerate
+/// Evaluates an initializer's prepare hook for a path and prints the command the
+/// CLI should run, as JSON: `{ "hook": { command, fingerprintDeps } }`, or `{}` when there is no hook.
+/// The CLI runs the command and passes its stdout to `initializer-generate` as input.
+open module bark.scripts.InitializerPrepare
 
 extends "pkl:Command"
 
 import "../Context.pkl" as Context
 import "../sys/extensions/Initializer.pkl" as Init
 import "../sys/io/PathResolver.pkl" as PathResolver
-import "../sys/io/Writer.pkl" as Writer
-
 
 /// Bark context supplied by the project entrypoint.
 ctx: Context
@@ -20,35 +21,47 @@ class Options {
   }
   query: String
 
-  initializerName: String
-
-  @Flag 
-  input: String
-
-  // For this to work we would need to hint the CLI about the format 
-  //  format of the subprocess output which is too much for now.
-  //@Flag {
-  //  convert = (raw) -> new json.Parser {
-  //    useMapping = true
-  //  }.parse(raw)
-  //}
-  //json: Any?
+  /// Name of the initializer, as declared in the registry.
+  /// Defaults to `config.initializers.defaultName`.
   
+  initializerName: String?
+
+}
+
+class PreparationOutput {
+  /// The evaluated hook; null when the initializer has no prepare hook.
+  hook: Init.HookEvaluated?
 }
 
 local resolved = PathResolver.resolvePath(ctx.graph, ctx.initializers, options.query)
 
-local initializer =
-  if (resolved.initializers.containsKey(options.initializerName))
-    ctx.initializers[options.initializerName]
-  else
-    throw("Initializer `\(options.initializerName)` does not apply to `\(options.query)`. Applicable: \(resolved.initializers.keys.join(", "))")
+local initializerName: String =
+  options.initializerName ?? ctx.config.initializers.defaultName
 
-local generated = initializer.run(new Init.InitializerContext {})
+local initializer: Init =
+  if (resolved.initializers.containsKey(initializerName))
+    ctx.initializers[initializerName]
+  else
+    throw("""
+     Initializer `\(initializerName)` does not apply to `\(options.query)`.
+     Applicable: \(resolved.initializers.keys.join(", "))
+     """)
+
+local hookContext = new Init.InitializerContext {
+  input = options.input
+}
+
+local preparation: PreparationOutput =
+  new {
+    hook =
+      let (prepare = initializer.prepare)
+        if (prepare == null) null
+        else new Init.HookEvaluated {
+          command = prepare.command.apply(hookContext)
+          fingerprintDeps = prepare.fingerprintDeps
+        }
+  }
 
 output {
-  // `pkl run` renders text even when files are set; the default would render ctx.
-  text = ""
-
-  files = Writer.write(resolved.filePath, generated)
+  text = new JsonRenderer {}.renderDocument(preparation)
 }

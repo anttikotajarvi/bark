@@ -3,6 +3,7 @@ import "pkl:json"
 
 
 import "../GraphModel.pkl" as Sys
+import "../Generic.pkl" as G
 
 
 target: TargetKind
@@ -39,7 +40,12 @@ class Hook {
   command: (InitializerContext) -> Command
   fingerprintDeps: List<String> = List()
 }
+class HookEvaluated {
+  command: Command
+  fingerprintDeps: List<String> = List()
+}
+
 class Command {
   args: List<String>
-  env: Mapping<String, String> = new Mapping {}
+  env: G.Env = new Mapping {}
 }

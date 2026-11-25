@@ -20,18 +20,29 @@ class Options {
   }
   query: String
 
-  initializerName: String
+  /// Name of the initializer, as declared in the registry.
+  /// Defaults to `config.initializers.defaultName`.
+  initializerName: String?
+
+  /// Raw input made available to the generator, e.g. the prepare hook's output.
+  @Flag
+  input: String = ""
 }
 
 local resolved = PathResolver.resolvePath(ctx.graph, ctx.initializers, options.query)
 
-local initializer =
-  if (resolved.initializers.containsKey(options.initializerName))
-    ctx.initializers[options.initializerName]
-  else
-    throw("Initializer `\(options.initializerName)` does not apply to `\(options.query)`. Applicable: \(resolved.initializers.keys.join(", "))")
+local initializerName: String =
+  options.initializerName ?? ctx.config.initializers.defaultName
 
-local generated = initializer.run(new Init.InitializerContext {})
+local initializer =
+  if (resolved.initializers.containsKey(initializerName))
+    ctx.initializers[initializerName]
+  else
+    throw("Initializer `\(initializerName)` does not apply to `\(options.query)`. Applicable: \(resolved.initializers.keys.join(", "))")
+
+local generated = initializer.run(new Init.InitializerContext {
+  input = options.input
+})
 
 output {
   // `pkl run` renders text even when files are set; the default would render ctx.

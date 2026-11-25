@@ -11,3 +11,6 @@ typealias SchemaPath = String(
   !contains(".."),
   endsWith(Constants.PKL_EXTENSION)
 )
+
+
+typealias Env = Mapping<String, String> 

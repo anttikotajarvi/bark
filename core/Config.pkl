@@ -19,6 +19,14 @@ assumedOutputDir: String = ".bark/output"
 /// Files left out of the projection, matched by file name in any directory.
 omittedFilenames: List<String> = List("schema.pkl", "index-schema.pkl")
 
+class InitializerConfig {
+  /// Initializer used when none is named on the command line.
+  defaultName: String = "DEFAULT"
+}
+
+/// Settings for initializers.
+initializers: InitializerConfig = new {}
+
 /// Import string for a core module; `path` is relative to the core root.
 function coreImport(path: String): String = "\(coreRoot)\(path)"
 
