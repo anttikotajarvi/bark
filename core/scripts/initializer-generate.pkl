@@ -3,9 +3,7 @@ open module bark.scripts.InitializerGenerate
 extends "pkl:Command"
 
 import "../Context.pkl" as Context
-import "../sys/extensions/Initializer.pkl" as Init
-import "../sys/extensions/InitializerBase.pkl" as InitBase
-import "../sys/extensions/DefaultInitializer.pkl" as DefaultInit
+import "../sys/extensions/Initializers.pkl" as Initializers
 import "../sys/io/PathResolver.pkl" as PathResolver
 import "../sys/io/Writer.pkl" as Writer
 
@@ -34,7 +32,7 @@ class Options {
 local resolved = PathResolver.resolvePath(ctx.graph, ctx.initializers, options.query)
 
 /// The initializer to use: the named one if given, else the default for the path's role.
-local initializer: InitBase =
+local initializer: Initializers.InitializerBase =
   let (name = options.initializerName)
     if (name != null)
       if (resolved.initializers.containsKey(name))
@@ -46,16 +44,14 @@ local initializer: InitBase =
     else
       throw("No initializer named and no default for role `\(resolved.role)` at `\(options.query)`.")
 
-local initializerContext = new Init.InitializerContext {
+local initializerContext = new Initializers.InitializerContext {
   pathInfo = resolved
   config = ctx.config
   input = options.input
 }
 
-local generated =
-  let (named = options.initializerName)
-    if (named != null) (initializer as Init).run(initializerContext)
-    else (initializer as DefaultInit).run(resolved.role!!, initializerContext)
+// A named initializer only applies when its target role is the resolved role.
+local generated = initializer.run(resolved.role!!, initializerContext)
 
 output {
   // `pkl run` renders text even when files are set; the default would render ctx.

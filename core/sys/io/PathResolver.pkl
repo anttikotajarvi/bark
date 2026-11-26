@@ -15,10 +15,10 @@
 /// PathRole describes the structural type of the resolved filesystem object.
 /// Collection entries inherit the role of their declared entry node.
 /// The file path and type follow from the role: only a tableEntry is a file.
-module bark.io.PathResolver
+module bark.sys.io.PathResolver
 
-import "../GraphModel.pkl" as GM
-import "../extensions/Initializer.pkl" as Init
+import "../GraphModel.pkl" as GraphModel
+import "../extensions/Initializers.pkl" as Initializers
 
 
 /// What a logical path resolves to, as reported to users and the CLI.
@@ -27,24 +27,24 @@ abstract class PathInfo {
   logicalPath: String
 
   /// Where the path lands on disk, relative to the data repo root, e.g. "products/P1.pkl".
-  filePath: String = if (role != null && GM.isFileRole(role)) "\(logicalPath).pkl" else logicalPath
+  filePath: String = if (role != null && GraphModel.isFileRole(role)) "\(logicalPath).pkl" else logicalPath
 
   /// Whether the path lands on a file or a directory; null for loose paths.
   fileType: FileType? =
     if (role == null) null
-    else if (GM.isFileRole(role)) "file"
+    else if (GraphModel.isFileRole(role)) "file"
     else "directory"
 
   /// Last path segment; null for the graph root.
   name: String?
 
   /// Structural role of the path; null for loose paths.
-  role: GM.PathRole?
+  role: GraphModel.PathRole?
 
   /// Schema associated with this role; null when none applies.
   /// For indexDir and tableEntry, constrains the entry itself.
   /// For tableDir, constrains the files contained by the table.
-  schema: GM.Schema?
+  schema: GraphModel.Schema?
 
   /// Initializers whose target matches this path's role and schema.
   initializers: Mapping<String, InitializerInfo> = new {}
@@ -63,7 +63,7 @@ class InitializerInfo {
 
 /// A node explicitly declared in the graph.
 class NodePathInfo extends PathInfo {
-  node: GM.AnyNode
+  node: GraphModel.AnyNode
 }
 
 /// An entry contained by a table or collection.
@@ -75,17 +75,17 @@ class EntryPathInfo extends PathInfo {
 /// A path not declared by the graph.
 class LoosePathInfo extends PathInfo {
   /// Type of the parent, if it is a declared node; null otherwise.
-  ownerType: GM.NodeType?
+  ownerType: GraphModel.NodeType?
 }
 
 /// Resolve a logical path (e.g. "lots/L1") against the registry graph.
 /// The path does not need to exist on disk.
-function resolvePath(graph: GM.AnyNode, declared: Mapping<String, Init>, path_: String): PathInfo =
+function resolvePath(graph: GraphModel.AnyNode, declared: Mapping<String, Initializers.Initializer>, path_: String): PathInfo =
   let (segments = pathSegments(path_))
-  let (found = GM.getNode(graph, segments))
-  let (parent = if (segments.isEmpty) null else GM.getNode(graph, segments.dropLast(1)))
+  let (found = GraphModel.getNode(graph, segments))
+  let (parent = if (segments.isEmpty) null else GraphModel.getNode(graph, segments.dropLast(1)))
   let (leaf = if (segments.isEmpty) null else segments.last)
-    if (parent is GM.CollectionNode && found != null)
+    if (parent is GraphModel.CollectionNode && found != null)
       new EntryPathInfo {
         logicalPath = path_
         name = leaf
@@ -94,7 +94,7 @@ function resolvePath(graph: GM.AnyNode, declared: Mapping<String, Init>, path_: 
         schema = schemaOf(found)
         initializers = matchInitializers(declared, roleOf(found), schemaOf(found))
       }
-    else if (parent is GM.TableNode)
+    else if (parent is GraphModel.TableNode)
       new EntryPathInfo {
         logicalPath = path_
         name = leaf
@@ -124,9 +124,9 @@ function resolvePath(graph: GM.AnyNode, declared: Mapping<String, Init>, path_: 
 
 /// Initializers whose target matches the given role and schema.
 local function matchInitializers(
-  initializers: Mapping<String, Init>,
-  role: GM.PathRole?,
-  schema: GM.Schema?
+  initializers: Mapping<String, Initializers.Initializer>,
+  role: GraphModel.PathRole?,
+  schema: GraphModel.Schema?
 ): Mapping<String, InitializerInfo> =
   new Mapping {
     when (role != null && schema != null) {
@@ -142,17 +142,17 @@ local function matchInitializers(
   }
 
 /// Classify a declared graph node by its filesystem role.
-local function roleOf(node: GM.AnyNode): GM.PathRole =
-  if (node is GM.DirNode) "dir"
-  else if (node is GM.IndexNode) "indexDir"
-  else if (node is GM.TableNode) "tableDir"
-  else if (node is GM.CollectionNode) "collectionDir"
+local function roleOf(node: GraphModel.AnyNode): GraphModel.PathRole =
+  if (node is GraphModel.DirNode) "dir"
+  else if (node is GraphModel.IndexNode) "indexDir"
+  else if (node is GraphModel.TableNode) "tableDir"
+  else if (node is GraphModel.CollectionNode) "collectionDir"
   else throw("Unknown graph node type: '\(node.type)'")
 
 /// Return the schema associated with a node, if any.
-local function schemaOf(node: GM.AnyNode): GM.Schema? =
-  if (node is GM.IndexNode) node._schema
-  else if (node is GM.TableNode) node._schema
+local function schemaOf(node: GraphModel.AnyNode): GraphModel.Schema? =
+  if (node is GraphModel.IndexNode) node._schema
+  else if (node is GraphModel.TableNode) node._schema
   else null
 
 local function pathSegments(path: String): List<String> =

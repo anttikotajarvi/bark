@@ -1,21 +1,21 @@
 import "sys/Generic.pkl" as G
 import "sys/GraphModel.pkl" as Sys
-import "sys/extensions/Initializer.pkl" as Init
+import "sys/extensions/Initializers.pkl" as Initializers
 
 typealias Schema = Sys.Schema
 typealias AnyNode = Sys.AnyNode
 typealias Children = Sys.Children
 typealias Graph = Sys.Graph
 
-/// An initializer declaration. Define one by amending the module:
-/// `(import("@bark/sys/extensions/Initializer.pkl")) { target { ... } generate = ... }`,
+/// An initializer declaration. Declare one in the registry's `initializers`:
+/// `["name"] = new { target { ... } generate = (ctx) -> ... }`,
 /// optionally with a `prepare` hook that the CLI runs before `generate`.
-typealias Initializer = Init
-typealias InitializerContext = Init.InitializerContext
-typealias Generated = Init.Generated
-typealias Hook = Init.Hook
-typealias Command = Init.Command
-typealias Target = Init.TargetKind
+typealias Initializer = Initializers.Initializer
+typealias InitializerContext = Initializers.InitializerContext
+typealias Generated = Initializers.Generated
+typealias Hook = Initializers.Hook
+typealias Command = Initializers.Command
+typealias Target = Initializers.Target
 
 typealias PosixDirName = G.PosixDirName
 typealias PosixFileName = G.PosixFileName

@@ -1,4 +1,4 @@
-module bark.io.Writer
+module bark.sys.io.Writer
 
 /// Thin write control layer.
 /// A FileOutput is written at `path`; a Mapping is written under it, keyed by subpath.

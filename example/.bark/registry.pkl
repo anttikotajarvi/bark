@@ -1,6 +1,5 @@
 amends "@bark/RegistryDeclaration.pkl" // Required amendment
 import "@bark/Meta.pkl" as Meta
-import "@bark/sys/extensions/Initializer.pkl" as Initializer
 
 
 
@@ -36,7 +35,7 @@ local defaultGraph =
 graph = defaultGraph
 
 initializers {
-  ["init-product"] = (Initializer) {
+  ["init-product"] = new {
     target {
       role = "tableEntry"
       schema = schemas.product
@@ -46,7 +45,7 @@ initializers {
     }
     generate = (_) -> new FileOutput { text = "" }
   }
-  ["gen-product"] = (Initializer) {
+  ["gen-product"] = new {
     target {
       role = "tableEntry"
       schema = schemas.product

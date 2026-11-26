@@ -1,0 +1,80 @@
+/// Initializers: what generates the files for a path in the data repo.
+///
+/// Named initializers (`Initializer`) are declared in the registry and apply to
+/// paths matching their `target`. Defaults (`DefaultInitializer`) are keyed by role
+/// in the context and are used when no initializer is named.
+module bark.sys.extensions.Initializers
+
+import "pkl:json"
+
+import "../GraphModel.pkl" as GraphModel
+import "../Generic.pkl" as Generic
+import "../io/PathResolver.pkl" as PathResolver
+import "../../Config.pkl" as Config
+
+/// What `generate` returns: a FileOutput for a file target (tableEntry), otherwise
+/// a Mapping of files relative to the target directory.
+typealias Generated = FileOutput | Mapping<String, FileOutput>
+
+/// A process the CLI runs.
+class Command {
+  args: List<String>
+  env: Generic.Env = new Mapping {}
+}
+
+/// Runs before `generate`; the command's stdout reaches `generate` as `input`.
+class Hook {
+  command: (InitializerContext) -> Command
+  fingerprintDeps: List<String> = List()
+}
+
+/// A hook with its command evaluated, as reported to the CLI.
+class HookEvaluated {
+  command: Command
+  fingerprintDeps: List<String> = List()
+}
+
+class InitializerContext {
+  /// What the initializer is running for: role, schema, name, matching initializers.
+  pathInfo: PathResolver.PathInfo
+
+  /// Bark configuration of the data repo.
+  config: Config
+
+  /// Raw input, e.g. the prepare hook's output. Empty when there is none.
+  input: String = ""
+
+  /// Parses `input` as JSON.
+  function parseJson(): Any =
+    new json.Parser {
+      useMapping = true
+    }.parse(input)
+}
+
+/// Parts shared by named initializers and defaults.
+abstract class InitializerBase {
+  prepare: Hook?
+
+  /// Checked by `run`, not here: Pkl does not check the return type of a function value.
+  generate: (InitializerContext) -> Generated
+
+  /// Calls `generate` for a target of the given role and checks the result against it.
+  function run(role: GraphModel.PathRole, ctx: InitializerContext): Generated(
+    if (GraphModel.isFileRole(role)) this is FileOutput else this is Mapping
+  ) = generate.apply(ctx)
+}
+
+/// The paths a named initializer applies to.
+class Target {
+  role: GraphModel.PathRole
+  schema: GraphModel.Schema
+}
+
+/// An initializer declared by name in the registry, for paths matching `target`.
+class Initializer extends InitializerBase {
+  target: Target
+}
+
+/// The initializer used for a role when none is named. Has no `target`: the role
+/// is the key it is registered under (see `defaults/Defaults.pkl`).
+class DefaultInitializer extends InitializerBase {}
